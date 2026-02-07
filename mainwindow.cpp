@@ -27,6 +27,43 @@
 #include <QKeyEvent>
 #include <QStringListModel>
 #include <QSizePolicy>
+#include <QStyledItemDelegate>
+#include <QComboBox>
+
+namespace {
+QStringList unitOptions() {
+    return {"瓶", "袋", "盒", "桶", "箱"};
+}
+
+class UnitComboDelegate : public QStyledItemDelegate {
+public:
+    using QStyledItemDelegate::QStyledItemDelegate;
+
+    QWidget *createEditor(QWidget *parent, const QStyleOptionViewItem &,
+                          const QModelIndex &) const override {
+        auto *combo = new QComboBox(parent);
+        combo->addItems(unitOptions());
+        combo->setEditable(false);
+        return combo;
+    }
+
+    void setEditorData(QWidget *editor, const QModelIndex &index) const override {
+        auto *combo = qobject_cast<QComboBox *>(editor);
+        if (!combo) return;
+        const QString value = index.data(Qt::EditRole).toString();
+        int idx = combo->findText(value);
+        if (idx < 0) idx = 0;
+        combo->setCurrentIndex(idx);
+    }
+
+    void setModelData(QWidget *editor, QAbstractItemModel *model,
+                      const QModelIndex &index) const override {
+        auto *combo = qobject_cast<QComboBox *>(editor);
+        if (!combo) return;
+        model->setData(index, combo->currentText());
+    }
+};
+} // namespace
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -104,9 +141,19 @@ MainWindow::MainWindow(QWidget *parent)
     setProductHeader("stock_qty", "库存");
     setProductHeader("unit_price", "单价");
 
+    const int colSpec = m_products->fieldIndex("spec");
+    const int colUnit = m_products->fieldIndex("unit");
+    if (colSpec >= 0 && colUnit >= 0 && colUnit != colSpec + 1) {
+        ui->tvProducts->horizontalHeader()->moveSection(colUnit, colSpec + 1);
+    }
+
     int colActiveP = m_products->fieldIndex("is_active");
     if (colActiveP >= 0) {
         m_products->setHeaderData(colActiveP, Qt::Horizontal, "启用(1/0)");
+    }
+
+    if (colUnit >= 0) {
+        ui->tvProducts->setItemDelegateForColumn(colUnit, new UnitComboDelegate(this));
     }
 
     ui->tvProducts->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -427,6 +474,10 @@ void MainWindow::onPReset() {
 void MainWindow::onPAdd() {
     const int row = m_products->rowCount();
     m_products->insertRow(row);
+    const int colUnit = m_products->fieldIndex("unit");
+    if (colUnit >= 0) {
+        m_products->setData(m_products->index(row, colUnit), unitOptions().value(0));
+    }
     ui->tvProducts->selectRow(row);
 }
 
@@ -459,6 +510,19 @@ void MainWindow::onPDel() {
 
 
 void MainWindow::onPSave() {
+    const int colUnit = m_products->fieldIndex("unit");
+    if (colUnit >= 0) {
+        for (int row = 0; row < m_products->rowCount(); ++row) {
+            const QString unit = m_products->data(m_products->index(row, colUnit)).toString().trimmed();
+            if (unit.isEmpty()) {
+                QMessageBox::warning(this, "保存失败", "单位不能为空，请选择单位。");
+                ui->tvProducts->selectRow(row);
+                ui->tvProducts->edit(m_products->index(row, colUnit));
+                return;
+            }
+        }
+    }
+
     if (!m_products->submitAll()) {
         QMessageBox::critical(this, "保存失败", m_products->lastError().text());
         m_products->revertAll();
@@ -1349,12 +1413,6 @@ static bool hasColumn(const QString& table, const QString& col)
 
 void MainWindow::ensureCompaniesSchema()
 {
-    if (!hasColumn("products", "unit")) {
-        QSqlQuery q;
-        if (!q.exec("ALTER TABLE products ADD COLUMN unit TEXT NOT NULL DEFAULT ''")) {
-            QMessageBox::warning(this, "数据库升级失败", q.lastError().text());
-        }
-    }
     // 给 companies 增加 is_active（1启用/0停用）
     if (!hasColumn("companies", "is_active")) {
         QSqlQuery q;
@@ -1369,6 +1427,20 @@ void MainWindow::ensureProductsSchema()
     if (!hasColumn("products", "is_active")) {
         QSqlQuery q;
         if (!q.exec("ALTER TABLE products ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1")) {
+            QMessageBox::warning(this, "数据库升级失败", q.lastError().text());
+        }
+    }
+
+    if (!hasColumn("products", "unit")) {
+        QSqlQuery q;
+        if (!q.exec("ALTER TABLE products ADD COLUMN unit TEXT NOT NULL DEFAULT '瓶'")) {
+            QMessageBox::warning(this, "数据库升级失败", q.lastError().text());
+        }
+    }
+
+    if (hasColumn("products", "unit")) {
+        QSqlQuery q;
+        if (!q.exec("UPDATE products SET unit = '瓶' WHERE unit IS NULL OR unit = ''")) {
             QMessageBox::warning(this, "数据库升级失败", q.lastError().text());
         }
     }

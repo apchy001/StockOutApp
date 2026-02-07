@@ -14,6 +14,7 @@ public:
 
         // 只允许编辑第5列：数量
         if (index.column() == 5) return f | Qt::ItemIsEditable;
+        return f & ~Qt::ItemIsEditable;
     }
 };
 
