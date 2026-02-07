@@ -1165,15 +1165,15 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
     html += "<div style='margin-bottom:8px;'>";
     html += "<table style='width:100%;border-collapse:collapse;'>";
     html += "<tr>";
-    html += "<td style='text-align:center;font-size:20px;font-weight:700;'>健力源 + "
+    html += "<td style='text-align:center;font-size:28px;font-weight:700;'>健力源 + "
             + esc(company) + " + 计划表</td>";
     html += "</tr>";
     html += "</table>";
     html += "<table style='width:100%;border-collapse:collapse;margin-top:6px;'>";
     html += "<tr>";
-    html += "<td style='text-align:left;'>供货商：" + esc(supplier) + "</td>";
-    html += "<td style='text-align:center;'>送货人：" + esc(deliverer) + "</td>";
-    html += "<td style='text-align:right;'>日期：" + esc(shipDate) + "</td>";
+    html += "<td style='text-align:center;'>供货商：" + esc(supplier) + "</td>";
+    html += "<td style='text-align:center;'>&nbsp;送货人：" + esc(deliverer) + "</td>";
+    html += "<td style='text-align:center;'>&nbsp;日期：" + esc(shipDate) + "</td>";
     html += "</tr>";
     html += "</table>";
     html += "</div>";
@@ -1228,9 +1228,9 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
     html += "</table>";
     html += "<table style='width:100%;border-collapse:collapse;margin-top:18px;'>";
     html += "<tr>";
-    html += "<td style='text-align:left;'>申请人：</td>";
-    html += "<td style='text-align:center;'>验收人：</td>";
-    html += "<td style='text-align:right;'>审核人：</td>";
+    html += "<td style='text-align:center;'>申请人：&nbsp;&nbsp;&nbsp;</td>";
+    html += "<td style='text-align:center;'>验收人：&nbsp;&nbsp;&nbsp;</td>";
+    html += "<td style='text-align:center;'>审核人：&nbsp;&nbsp;&nbsp;</td>";
     html += "</tr>";
     html += "</table>";
     html += "</body></html>";
