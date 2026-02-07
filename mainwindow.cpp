@@ -10,8 +10,8 @@
 #include <QStandardPaths>
 #include <QSignalBlocker>
 #include <QDir>
+#include <QtPrintSupport/QPrintPreviewDialog>
 #include <QtPrintSupport/QPrinter>
-#include <QtPrintSupport/QPrintDialog>
 #include <QTextDocument>
 #include <algorithm>
 #include <QTableView>
@@ -1249,13 +1249,16 @@ bool MainWindow::printShipment(int shipmentId, QString* err) {
     QPrinter printer(QPrinter::HighResolution);
     printer.setDocName(QString("Shipment_%1").arg(shipmentId));
 
-    QPrintDialog dlg(&printer, this);
-    dlg.setWindowTitle("打印出货单");
-    if (dlg.exec() != QDialog::Accepted) return false;
-
     QTextDocument doc;
     doc.setHtml(html);
-    doc.print(&printer);
+
+    QPrintPreviewDialog preview(&printer, this);
+    preview.setWindowTitle("打印预览");
+    connect(&preview, &QPrintPreviewDialog::paintRequested, this, [&](QPrinter* p) {
+        doc.print(p);
+    });
+
+    if (preview.exec() != QDialog::Accepted) return false;
     return true;
 }
 
