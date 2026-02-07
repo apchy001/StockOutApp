@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>630</width>
+    <width>759</width>
     <height>343</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>出入库系统</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
@@ -370,7 +370,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>630</width>
+     <width>759</width>
      <height>18</height>
     </rect>
    </property>
