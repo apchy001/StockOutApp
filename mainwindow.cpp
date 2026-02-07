@@ -91,13 +91,18 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tvProducts->verticalHeader()->setFixedWidth(50);
 
     // ✅ 表头
-    m_products->setHeaderData(0, Qt::Horizontal, "ID");
-    m_products->setHeaderData(1, Qt::Horizontal, "名称");
-    m_products->setHeaderData(2, Qt::Horizontal, "规格");
-    m_products->setHeaderData(3, Qt::Horizontal, "分类");
-    m_products->setHeaderData(4, Qt::Horizontal, "条码");
-    m_products->setHeaderData(5, Qt::Horizontal, "库存");
-    m_products->setHeaderData(6, Qt::Horizontal, "单价");
+    auto setProductHeader = [this](const QString& field, const QString& title) {
+        const int col = m_products->fieldIndex(field);
+        if (col >= 0) m_products->setHeaderData(col, Qt::Horizontal, title);
+    };
+    setProductHeader("id", "ID");
+    setProductHeader("name", "名称");
+    setProductHeader("spec", "规格");
+    setProductHeader("unit", "单位");
+    setProductHeader("category", "分类");
+    setProductHeader("barcode", "条码");
+    setProductHeader("stock_qty", "库存");
+    setProductHeader("unit_price", "单价");
 
     int colActiveP = m_products->fieldIndex("is_active");
     if (colActiveP >= 0) {
@@ -126,14 +131,16 @@ MainWindow::MainWindow(QWidget *parent)
                 if (!current.isValid()) return;
                 const int row = current.row();
 
-                auto idxName = m_products->index(row, 1);
-                auto idxSpec = m_products->index(row, 2);
-                auto idxBar  = m_products->index(row, 4);
-
-                const QString msg = QString("名称：%1   规格：%2   条码：%3")
-                                        .arg(m_products->data(idxName).toString(),
-                                             m_products->data(idxSpec).toString(),
-                                             m_products->data(idxBar).toString());
+                auto getField = [this, row](const QString& field) -> QString {
+                    const int col = m_products->fieldIndex(field);
+                    if (col < 0) return {};
+                    return m_products->data(m_products->index(row, col)).toString();
+                };
+                const QString msg = QString("名称：%1   规格：%2   单位：%3   条码：%4")
+                                        .arg(getField("name"),
+                                             getField("spec"),
+                                             getField("unit"),
+                                             getField("barcode"));
                 statusBar()->showMessage(msg);
             });
 
@@ -198,13 +205,14 @@ MainWindow::MainWindow(QWidget *parent)
 
     // ===== 入库明细模型 =====
     m_inModel = new InItemModel(this);
-    m_inModel->setColumnCount(6);
+    m_inModel->setColumnCount(7);
     m_inModel->setHeaderData(0, Qt::Horizontal, "product_id");
     m_inModel->setHeaderData(1, Qt::Horizontal, "条码");
     m_inModel->setHeaderData(2, Qt::Horizontal, "名称");
     m_inModel->setHeaderData(3, Qt::Horizontal, "规格");
-    m_inModel->setHeaderData(4, Qt::Horizontal, "数量");
-    m_inModel->setHeaderData(5, Qt::Horizontal, "当前库存");
+    m_inModel->setHeaderData(4, Qt::Horizontal, "单位");
+    m_inModel->setHeaderData(5, Qt::Horizontal, "数量");
+    m_inModel->setHeaderData(6, Qt::Horizontal, "当前库存");
 
     ui->tvInItems->setModel(m_inModel);
     ui->tvInItems->setColumnHidden(0, true);
@@ -214,7 +222,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(m_inModel, &QStandardItemModel::itemChanged, this, [this](QStandardItem* item){
         if (!item) return;
-        if (item->column() != 4) return;
+        if (item->column() != 5) return;
 
         bool ok = false;
         int v = item->text().toInt(&ok);
@@ -328,15 +336,16 @@ MainWindow::MainWindow(QWidget *parent)
 
     // ===== 出库：明细表模型 =====
     m_outModel = new OutItemModel(this);
-    m_outModel->setColumnCount(8);
+    m_outModel->setColumnCount(9);
     m_outModel->setHeaderData(0, Qt::Horizontal, "product_id");
     m_outModel->setHeaderData(1, Qt::Horizontal, "条码");
     m_outModel->setHeaderData(2, Qt::Horizontal, "名称");
     m_outModel->setHeaderData(3, Qt::Horizontal, "规格");
-    m_outModel->setHeaderData(4, Qt::Horizontal, "数量");
-    m_outModel->setHeaderData(5, Qt::Horizontal, "单价");
-    m_outModel->setHeaderData(6, Qt::Horizontal, "金额");
-    m_outModel->setHeaderData(7, Qt::Horizontal, "库存");
+    m_outModel->setHeaderData(4, Qt::Horizontal, "单位");
+    m_outModel->setHeaderData(5, Qt::Horizontal, "数量");
+    m_outModel->setHeaderData(6, Qt::Horizontal, "单价");
+    m_outModel->setHeaderData(7, Qt::Horizontal, "金额");
+    m_outModel->setHeaderData(8, Qt::Horizontal, "库存");
 
     ui->tvOutItems->setModel(m_outModel);
     ui->tvOutItems->setSelectionBehavior(QAbstractItemView::SelectRows);
@@ -366,21 +375,21 @@ MainWindow::MainWindow(QWidget *parent)
     // 数量修改后：校验 + 自动更新金额/合计
     connect(m_outModel, &QStandardItemModel::itemChanged, this, [this](QStandardItem* item){
         if (!item) return;
-        if (item->column() != 4) return;
+        if (item->column() != 5) return;
 
         int row = item->row();
         bool ok = false;
         int qty = item->text().toInt(&ok);
-        int stock = m_outModel->item(row, 7)->text().toInt();
+        int stock = m_outModel->item(row, 8)->text().toInt();
 
         QSignalBlocker blocker(m_outModel);
         if (!ok || qty <= 0) qty = 1;
         if (qty > stock) qty = stock;
         item->setText(QString::number(qty));
 
-        double unit = m_outModel->item(row, 5)->text().toDouble();
+        double unit = m_outModel->item(row, 6)->text().toDouble();
         double amount = unit * qty;
-        m_outModel->setItem(row, 6, new QStandardItem(QString::number(amount, 'f', 2)));
+        m_outModel->setItem(row, 7, new QStandardItem(QString::number(amount, 'f', 2)));
 
         outRecalcTotal();
     });
@@ -555,7 +564,7 @@ void MainWindow::onInAdd() {
 void MainWindow::inAddProductByBarcode(const QString& barcode, int qty) {
     // 查产品
     QSqlQuery q;
-    q.prepare("SELECT id, name, spec, stock_qty, is_active FROM products WHERE barcode = ?");
+    q.prepare("SELECT id, name, spec, unit, stock_qty, is_active FROM products WHERE barcode = ?");
     q.addBindValue(barcode);
 
     if (!q.exec() || !q.next()) {
@@ -564,7 +573,7 @@ void MainWindow::inAddProductByBarcode(const QString& barcode, int qty) {
         return;
     }
 
-    const int active = q.value(4).toInt();
+    const int active = q.value(5).toInt();
     if (!active) {
         QMessageBox::warning(this, "商品已停用",
                              "该条码商品已停用/下架，禁止入库。\n如需继续使用，请先在【产品库】里启用它。");
@@ -574,13 +583,14 @@ void MainWindow::inAddProductByBarcode(const QString& barcode, int qty) {
     const int productId = q.value(0).toInt();
     const QString name  = q.value(1).toString();
     const QString spec  = q.value(2).toString();
-    const int stock     = q.value(3).toInt();
+    const QString unit  = q.value(3).toString();
+    const int stock     = q.value(4).toInt();
 
     // 如果同一个 product 已经在明细里，则数量累加
     for (int r = 0; r < m_inModel->rowCount(); ++r) {
         if (m_inModel->item(r, 0)->text().toInt() == productId) {
-            int oldQty = m_inModel->item(r, 4)->text().toInt();
-            m_inModel->setItem(r, 4, new QStandardItem(QString::number(oldQty + qty)));
+            int oldQty = m_inModel->item(r, 5)->text().toInt();
+            m_inModel->setItem(r, 5, new QStandardItem(QString::number(oldQty + qty)));
             inRecalcTotal();
             return;
         }
@@ -592,6 +602,7 @@ void MainWindow::inAddProductByBarcode(const QString& barcode, int qty) {
     row << new QStandardItem(barcode);
     row << new QStandardItem(name);
     row << new QStandardItem(spec);
+    row << new QStandardItem(unit);
     row << new QStandardItem(QString::number(qty));
     row << new QStandardItem(QString::number(stock));
     m_inModel->appendRow(row);
@@ -602,7 +613,7 @@ void MainWindow::inAddProductByBarcode(const QString& barcode, int qty) {
 void MainWindow::inRecalcTotal() {
     int total = 0;
     for (int r = 0; r < m_inModel->rowCount(); ++r) {
-        total += m_inModel->item(r, 4)->text().toInt();
+        total += m_inModel->item(r, 5)->text().toInt();
     }
     m_inTotalQty = total;
     ui->lblInTotal->setText(QString("合计数量：%1").arg(total));
@@ -652,7 +663,7 @@ void MainWindow::onInCommit() {
 
     for (int r = 0; r < m_inModel->rowCount(); ++r) {
         const int productId = m_inModel->item(r, 0)->text().toInt();
-        const int qty = m_inModel->item(r, 4)->text().toInt();
+        const int qty = m_inModel->item(r, 5)->text().toInt();
 
         insItem.addBindValue(receiptId);
         insItem.addBindValue(productId);
@@ -740,7 +751,7 @@ void MainWindow::onOutAdd() {
 
 void MainWindow::outAddByBarcode(const QString& barcode, int qty) {
     QSqlQuery q;
-    q.prepare("SELECT id, name, spec, unit_price, stock_qty, is_active FROM products WHERE barcode = ?");
+    q.prepare("SELECT id, name, spec, unit, unit_price, stock_qty, is_active FROM products WHERE barcode = ?");
     q.addBindValue(barcode);
 
     if (!q.exec() || !q.next()) {
@@ -749,7 +760,7 @@ void MainWindow::outAddByBarcode(const QString& barcode, int qty) {
         return;
     }
 
-    const int active = q.value(5).toInt();
+    const int active = q.value(6).toInt();
     if (!active) {
         QMessageBox::warning(this, "商品已停用",
                              "该条码商品已停用/下架，禁止出库。\n如需继续使用，请先在【产品库】里启用它。");
@@ -759,8 +770,9 @@ void MainWindow::outAddByBarcode(const QString& barcode, int qty) {
     const int productId = q.value(0).toInt();
     const QString name  = q.value(1).toString();
     const QString spec  = q.value(2).toString();
-    const double unit   = q.value(3).toDouble();
-    const int stock     = q.value(4).toInt();
+    const QString unitName = q.value(3).toString();
+    const double unit   = q.value(4).toDouble();
+    const int stock     = q.value(5).toInt();
 
     if (stock <= 0) {
         QMessageBox::warning(this, "库存不足", "该商品库存为 0，无法出库。");
@@ -770,16 +782,16 @@ void MainWindow::outAddByBarcode(const QString& barcode, int qty) {
     // 已存在则累加（并不超过库存）
     for (int r = 0; r < m_outModel->rowCount(); ++r) {
         if (m_outModel->item(r, 0)->text().toInt() == productId) {
-            int oldQty = m_outModel->item(r, 4)->text().toInt();
+            int oldQty = m_outModel->item(r, 5)->text().toInt();
             int newQty = oldQty + qty;
             if (newQty > stock) newQty = stock;
 
             QSignalBlocker blocker(m_outModel);
-            m_outModel->setItem(r, 4, new QStandardItem(QString::number(newQty)));
-            m_outModel->setItem(r, 6, new QStandardItem(QString::number(unit * newQty, 'f', 2)));
+            m_outModel->setItem(r, 5, new QStandardItem(QString::number(newQty)));
+            m_outModel->setItem(r, 7, new QStandardItem(QString::number(unit * newQty, 'f', 2)));
             outRecalcTotal();
             ui->tvOutItems->selectRow(r);
-            ui->tvOutItems->edit(m_outModel->index(r, 4));
+            ui->tvOutItems->edit(m_outModel->index(r, 5));
             return;
         }
     }
@@ -790,6 +802,7 @@ void MainWindow::outAddByBarcode(const QString& barcode, int qty) {
     row << new QStandardItem(barcode);
     row << new QStandardItem(name);
     row << new QStandardItem(spec);
+    row << new QStandardItem(unitName);
 
     int realQty = qty;
     if (realQty > stock) realQty = stock;
@@ -803,13 +816,13 @@ void MainWindow::outAddByBarcode(const QString& barcode, int qty) {
 
     int r = m_outModel->rowCount() - 1;
     ui->tvOutItems->selectRow(r);
-    ui->tvOutItems->edit(m_outModel->index(r, 4));
+    ui->tvOutItems->edit(m_outModel->index(r, 5));
 }
 
 void MainWindow::outRecalcTotal() {
     double total = 0.0;
     for (int r = 0; r < m_outModel->rowCount(); ++r) {
-        total += m_outModel->item(r, 6)->text().toDouble();
+        total += m_outModel->item(r, 7)->text().toDouble();
     }
     ui->lblOutTotal->setText(QString("合计金额：%1").arg(QString::number(total, 'f', 2)));
 }
@@ -866,8 +879,8 @@ void MainWindow::onOutCommit() {
 
     for (int r = 0; r < m_outModel->rowCount(); ++r) {
         int productId = m_outModel->item(r, 0)->text().toInt();
-        int qty = m_outModel->item(r, 4)->text().toInt();
-        double unit = m_outModel->item(r, 5)->text().toDouble();
+        int qty = m_outModel->item(r, 5)->text().toInt();
+        double unit = m_outModel->item(r, 6)->text().toDouble();
         double amount = unit * qty;
 
         // 再查一次库存（保险）
@@ -1020,11 +1033,11 @@ bool MainWindow::exportShipmentCsv(int shipmentId, const QString& path, QString*
     ts << "日期," << csvEscape(shipDate) << "\n";
     ts << "单号," << shipmentId << "\n\n";
 
-    ts << "名称,规格,条码,数量,单价,金额\n";
+    ts << "名称,规格,单位,条码,数量,单价,金额\n";
 
     QSqlQuery qi;
     qi.prepare(R"(
-        SELECT p.name, p.spec, p.barcode, i.qty, i.unit_price, i.amount
+        SELECT p.name, p.spec, p.unit, p.barcode, i.qty, i.unit_price, i.amount
         FROM shipment_items i
         JOIN products p ON p.id = i.product_id
         WHERE i.shipment_id = ?
@@ -1041,12 +1054,13 @@ bool MainWindow::exportShipmentCsv(int shipmentId, const QString& path, QString*
         ts << csvEscape(qi.value(0).toString()) << ","
            << csvEscape(qi.value(1).toString()) << ","
            << csvEscape(qi.value(2).toString()) << ","
-           << qi.value(3).toInt() << ","
-           << QString::number(qi.value(4).toDouble(), 'f', 2) << ","
-           << QString::number(qi.value(5).toDouble(), 'f', 2) << "\n";
+           << csvEscape(qi.value(3).toString()) << ","
+           << qi.value(4).toInt() << ","
+           << QString::number(qi.value(5).toDouble(), 'f', 2) << ","
+           << QString::number(qi.value(6).toDouble(), 'f', 2) << "\n";
     }
 
-    ts << "\n合计,,," << "," << "," << QString::number(total, 'f', 2) << "\n";
+    ts << "\n合计,,,,,," << QString::number(total, 'f', 2) << "\n";
     return true;
 }
 
@@ -1104,13 +1118,13 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
 
     html += "<table border='1' cellspacing='0' cellpadding='6' width='100%'>";
     html += "<tr>"
-            "<th>名称</th><th>规格</th><th>条码</th>"
+            "<th>名称</th><th>规格</th><th>单位</th><th>条码</th>"
             "<th>数量</th><th>单价</th><th>金额</th>"
             "</tr>";
 
     QSqlQuery qi;
     qi.prepare(R"(
-        SELECT p.name, p.spec, p.barcode, i.qty, i.unit_price, i.amount
+        SELECT p.name, p.spec, p.unit, p.barcode, i.qty, i.unit_price, i.amount
         FROM shipment_items i
         JOIN products p ON p.id = i.product_id
         WHERE i.shipment_id = ?
@@ -1125,14 +1139,16 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
     while (qi.next()) {
         const QString name   = qi.value(0).toString();
         const QString spec   = qi.value(1).toString();
-        const QString barcode= qi.value(2).toString();
-        const int qty        = qi.value(3).toInt();
-        const double unit    = qi.value(4).toDouble();
-        const double amt     = qi.value(5).toDouble();
+        const QString unitName = qi.value(2).toString();
+        const QString barcode= qi.value(3).toString();
+        const int qty        = qi.value(4).toInt();
+        const double unit    = qi.value(5).toDouble();
+        const double amt     = qi.value(6).toDouble();
 
         html += "<tr>";
         html += "<td>" + esc(name) + "</td>";
         html += "<td>" + esc(spec) + "</td>";
+        html += "<td>" + esc(unitName) + "</td>";
         html += "<td>" + esc(barcode) + "</td>";
         html += "<td align='right'>" + QString::number(qty) + "</td>";
         html += "<td align='right'>" + QString::number(unit, 'f', 2) + "</td>";
@@ -1140,7 +1156,7 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
         html += "</tr>";
     }
 
-    html += QString("<tr><td colspan='5' align='right'><b>合计</b></td>"
+    html += QString("<tr><td colspan='6' align='right'><b>合计</b></td>"
                     "<td align='right'><b>%1</b></td></tr>")
                 .arg(QString::number(totalAmt, 'f', 2));
 
@@ -1333,6 +1349,12 @@ static bool hasColumn(const QString& table, const QString& col)
 
 void MainWindow::ensureCompaniesSchema()
 {
+    if (!hasColumn("products", "unit")) {
+        QSqlQuery q;
+        if (!q.exec("ALTER TABLE products ADD COLUMN unit TEXT NOT NULL DEFAULT ''")) {
+            QMessageBox::warning(this, "数据库升级失败", q.lastError().text());
+        }
+    }
     // 给 companies 增加 is_active（1启用/0停用）
     if (!hasColumn("companies", "is_active")) {
         QSqlQuery q;
