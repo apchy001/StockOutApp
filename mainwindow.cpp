@@ -1211,7 +1211,7 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
         html += "<td>" + esc(name) + "</td>";
         html += "<td>" + esc(spec) + "</td>";
         html += "<td align='center'>" + esc(unitName) + "</td>";
-        html += "<td align='right'>" + QString::number(qty) + "</td>";
+        html += "<td></td>";
         html += "<td align='right'>" + QString::number(qty) + "</td>";
         html += "<td align='right'>" + QString::number(unit, 'f', 2) + "</td>";
         html += "<td align='right'>" + QString::number(amt, 'f', 2) + "</td>";
@@ -1224,19 +1224,37 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
                     "<td align='right'><b>%1</b></td><td></td></tr>")
                 .arg(QString::number(totalAmt, 'f', 2));
 
+    // ... 上面是合计行的代码 ...
     html += "</table>";
 
-    html += "<div style='width:100%;margin-top:18px;'>";
-    html += "<table style='margin:0 auto; border-collapse:collapse;'>";
-    html += "<tr>";
-    html += "<td style='padding:0 80px; text-align:center;'>申请人：</td>";
-    html += "<td style='padding:0 80px; text-align:center;'>验收人：</td>";
-    html += "<td style='padding:0 80px; text-align:center;'>审核人：</td>";
-    html += "</tr>";
-    html += "</table>";
+    // --- 签字栏开始 ---
+    // 1. 外层容器：宽度设为 90% 或 100% 都可以，margin-top 稍微加大一点(30px)拉开和表格的距离
+    html += "<div style='width:98%; margin:30px auto 0 auto;'>";
+
+    // 2. 签字栏表格：宽度铺满，去掉边框
+    html += "  <table width='100%' style='border:none; border-collapse:collapse;'>";
+    html += "    <tr>";
+
+    // 【左侧】申请人：align='left' 强制靠左
+    // 这里的 padding-left:10px 是为了不让文字紧贴纸张边缘，留一点点呼吸感，比 120px 安全得多
+    html += "      <td width='33%' align='left' style='border:none; padding-left:10px;'>申请人：__________</td>";
+
+    // 【中间】验收人：align='center' 强制居中
+    html += "      <td width='34%' align='center' style='border:none;'>验收人：__________</td>";
+
+    // 【右侧】审核人：align='right' 强制靠右
+    // 同样加一点 padding-right 防止紧贴右边缘
+    html += "      <td width='33%' align='right' style='border:none; padding-right:10px;'>审核人：__________</td>";
+
+    html += "    </tr>";
+    html += "  </table>";
     html += "</div>";
+    // --- 签字栏结束 ---
 
     html += "</body></html>";
+
+
+
 
 
     return html;
