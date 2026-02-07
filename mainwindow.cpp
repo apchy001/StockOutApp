@@ -1165,17 +1165,16 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
     html += "<div style='margin-bottom:8px;'>";
     html += "<table style='width:100%;border-collapse:collapse;'>";
     html += "<tr>";
-    html += "<td style='text-align:center;font-size:28px;font-weight:700;'>健力源 + "
-            + esc(company) + " + 计划表</td>";
+    html += "<div style='width:100%;text-align:center;margin-top:10px;"
+            "font-size:120px;font-weight:700;'>";
+    html += "健力源" + esc(company) + "计划表</td>";
     html += "</tr>";
     html += "</table>";
-    html += "<table style='width:100%;border-collapse:collapse;margin-top:6px;'>";
-    html += "<tr>";
-    html += "<td style='text-align:center;'>供货商：" + esc(supplier) + "</td>";
-    html += "<td style='text-align:center;'>&nbsp;送货人：" + esc(deliverer) + "</td>";
-    html += "<td style='text-align:center;'>&nbsp;日期：" + esc(shipDate) + "</td>";
-    html += "</tr>";
-    html += "</table>";
+    html += "<div style='width:100%;text-align:center;margin-top:6px;'>";
+    html += "供货商：" + esc(supplier)
+            + "&nbsp;&nbsp;&nbsp;送货人：" + esc(deliverer)
+            + "&nbsp;&nbsp;&nbsp;日期：" + esc(shipDate);
+    html += "</div>";
     html += "</div>";
 
     html += "<table border='1' cellspacing='0' cellpadding='6' width='100%' style='border-collapse:collapse;'>";
@@ -1226,14 +1225,19 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
                 .arg(QString::number(totalAmt, 'f', 2));
 
     html += "</table>";
-    html += "<table style='width:100%;border-collapse:collapse;margin-top:18px;'>";
+
+    html += "<div style='width:100%;margin-top:18px;'>";
+    html += "<table style='margin:0 auto; border-collapse:collapse;'>";
     html += "<tr>";
-    html += "<td style='text-align:center;'>申请人：&nbsp;&nbsp;&nbsp;</td>";
-    html += "<td style='text-align:center;'>验收人：&nbsp;&nbsp;&nbsp;</td>";
-    html += "<td style='text-align:center;'>审核人：&nbsp;&nbsp;&nbsp;</td>";
+    html += "<td style='padding:0 80px; text-align:center;'>申请人：</td>";
+    html += "<td style='padding:0 80px; text-align:center;'>验收人：</td>";
+    html += "<td style='padding:0 80px; text-align:center;'>审核人：</td>";
     html += "</tr>";
     html += "</table>";
+    html += "</div>";
+
     html += "</body></html>";
+
 
     return html;
 }
