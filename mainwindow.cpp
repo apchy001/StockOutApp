@@ -1082,9 +1082,24 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
 
     QString html;
     html += "<html><head><meta charset='utf-8'></head><body>";
-    html += "<h2 style='margin:0'>出货单</h2>";
-    html += QString("<p style='margin:6px 0'>公司：%1<br>日期：%2<br>单号：%3</p>")
-                .arg(esc(company), esc(shipDate))
+    html += "<div style='border-bottom:1px solid #000;margin-bottom:8px;padding-bottom:6px;'>";
+    html += "<table style='width:100%;border-collapse:collapse;'>";
+    html += "<tr>";
+    html += "<td style='width:25%;text-align:left;font-size:18px;font-weight:700;'>健力源</td>";
+    html += QString("<td style='width:50%;text-align:center;'><h2 style='margin:0;font-size:20px;'>%1</h2></td>")
+                .arg(esc(company));
+    html += "<td style='width:25%;text-align:right;font-size:18px;font-weight:700;'>计划表</td>";
+    html += "</tr>";
+    html += "</table>";
+    html += "<table style='width:100%;border-collapse:collapse;margin-top:6px;'>";
+    html += "<tr>";
+    html += "<td style='text-align:left;'>供货商：____</td>";
+    html += "<td style='text-align:right;'>送货人：____</td>";
+    html += "</tr>";
+    html += "</table>";
+    html += "</div>";
+    html += QString("<p style='margin:6px 0 10px 0'>日期：%1&nbsp;&nbsp;单号：%2</p>")
+                .arg(esc(shipDate))
                 .arg(shipmentId);
 
     html += "<table border='1' cellspacing='0' cellpadding='6' width='100%'>";
@@ -1446,4 +1461,3 @@ void MainWindow::onPToggleActive()
     m_products->select();
     QMessageBox::information(this, "完成", QString("已%1：%2").arg(newVal ? "启用" : "停用").arg(name));
 }
-
