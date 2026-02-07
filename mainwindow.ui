@@ -254,7 +254,7 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_5">
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="3,0,6,1,0,0,0">
+         <layout class="QHBoxLayout" name="horizontalLayout_6" stretch="3,2,2,0,6,1,0,0,0">
           <item>
            <widget class="QComboBox" name="cbOutCompany">
             <property name="sizePolicy">
@@ -274,6 +274,20 @@
             </property>
             <property name="currentText">
              <string>选择公司</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="leOutSupplier">
+            <property name="placeholderText">
+             <string>供货商</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="leOutDeliverer">
+            <property name="placeholderText">
+             <string>送货人</string>
             </property>
            </widget>
           </item>

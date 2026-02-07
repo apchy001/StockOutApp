@@ -1155,35 +1155,33 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
     const QString company  = q.value(0).toString();
     const QString shipDate = q.value(1).toString();
     const double totalAmt  = q.value(2).toDouble();
+    const QString supplier = ui->leOutSupplier ? ui->leOutSupplier->text() : QString();
+    const QString deliverer = ui->leOutDeliverer ? ui->leOutDeliverer->text() : QString();
 
     auto esc = [](const QString& s){ return s.toHtmlEscaped(); };
 
     QString html;
     html += "<html><head><meta charset='utf-8'></head><body>";
-    html += "<div style='border-bottom:1px solid #000;margin-bottom:8px;padding-bottom:6px;'>";
+    html += "<div style='margin-bottom:8px;'>";
     html += "<table style='width:100%;border-collapse:collapse;'>";
     html += "<tr>";
-    html += "<td style='width:25%;text-align:left;font-size:18px;font-weight:700;'>健力源</td>";
-    html += QString("<td style='width:50%;text-align:center;'><h2 style='margin:0;font-size:20px;'>%1</h2></td>")
-                .arg(esc(company));
-    html += "<td style='width:25%;text-align:right;font-size:18px;font-weight:700;'>计划表</td>";
+    html += "<td style='text-align:center;font-size:20px;font-weight:700;'>健力源 + "
+            + esc(company) + " + 计划表</td>";
     html += "</tr>";
     html += "</table>";
     html += "<table style='width:100%;border-collapse:collapse;margin-top:6px;'>";
     html += "<tr>";
-    html += "<td style='text-align:left;'>供货商：____</td>";
-    html += "<td style='text-align:right;'>送货人：____</td>";
+    html += "<td style='text-align:left;'>供货商：" + esc(supplier) + "</td>";
+    html += "<td style='text-align:center;'>送货人：" + esc(deliverer) + "</td>";
+    html += "<td style='text-align:right;'>日期：" + esc(shipDate) + "</td>";
     html += "</tr>";
     html += "</table>";
     html += "</div>";
-    html += QString("<p style='margin:6px 0 10px 0'>日期：%1&nbsp;&nbsp;单号：%2</p>")
-                .arg(esc(shipDate))
-                .arg(shipmentId);
 
-    html += "<table border='1' cellspacing='0' cellpadding='6' width='100%'>";
+    html += "<table border='1' cellspacing='0' cellpadding='6' width='100%' style='border-collapse:collapse;'>";
     html += "<tr>"
-            "<th>名称</th><th>规格</th><th>单位</th><th>条码</th>"
-            "<th>数量</th><th>单价</th><th>金额</th>"
+            "<th>序号</th><th>品名</th><th>规格</th><th>单位</th>"
+            "<th>申请数量</th><th>验收数量</th><th>单价</th><th>合计金额</th><th>备注</th>"
             "</tr>";
 
     QSqlQuery qi;
@@ -1200,32 +1198,41 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
         return {};
     }
 
+    int rowNo = 1;
     while (qi.next()) {
         const QString name   = qi.value(0).toString();
         const QString spec   = qi.value(1).toString();
         const QString unitName = qi.value(2).toString();
-        const QString barcode= qi.value(3).toString();
         const int qty        = qi.value(4).toInt();
         const double unit    = qi.value(5).toDouble();
         const double amt     = qi.value(6).toDouble();
 
         html += "<tr>";
+        html += "<td align='center'>" + QString::number(rowNo) + "</td>";
         html += "<td>" + esc(name) + "</td>";
         html += "<td>" + esc(spec) + "</td>";
-        html += "<td>" + esc(unitName) + "</td>";
-        html += "<td>" + esc(barcode) + "</td>";
+        html += "<td align='center'>" + esc(unitName) + "</td>";
+        html += "<td align='right'>" + QString::number(qty) + "</td>";
         html += "<td align='right'>" + QString::number(qty) + "</td>";
         html += "<td align='right'>" + QString::number(unit, 'f', 2) + "</td>";
         html += "<td align='right'>" + QString::number(amt, 'f', 2) + "</td>";
+        html += "<td></td>";
         html += "</tr>";
+        ++rowNo;
     }
 
-    html += QString("<tr><td colspan='6' align='right'><b>合计</b></td>"
-                    "<td align='right'><b>%1</b></td></tr>")
+    html += QString("<tr><td colspan='7' align='right'><b>合计</b></td>"
+                    "<td align='right'><b>%1</b></td><td></td></tr>")
                 .arg(QString::number(totalAmt, 'f', 2));
 
     html += "</table>";
-    html += "<p style='margin-top:18px'>签收：______________</p>";
+    html += "<table style='width:100%;border-collapse:collapse;margin-top:18px;'>";
+    html += "<tr>";
+    html += "<td style='text-align:left;'>申请人：</td>";
+    html += "<td style='text-align:center;'>验收人：</td>";
+    html += "<td style='text-align:right;'>审核人：</td>";
+    html += "</tr>";
+    html += "</table>";
     html += "</body></html>";
 
     return html;
