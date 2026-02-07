@@ -1177,7 +1177,7 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
     html += "</div>";
     html += "</div>";
 
-    html += "<table border='1' cellspacing='0' cellpadding='6' width='100%' style='border-collapse:collapse;'>";
+    html += "<table border='1' cellspacing='0' cellpadding='6' width='100%' style='border-collapse:collapse;text-align:center;'>";
     html += "<tr>"
             "<th>序号</th><th>品名</th><th>规格</th><th>单位</th>"
             "<th>申请数量</th><th>验收数量</th><th>单价</th><th>合计金额</th><th>备注</th>"
@@ -1207,21 +1207,21 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
         const double amt     = qi.value(6).toDouble();
 
         html += "<tr>";
-        html += "<td align='center'>" + QString::number(rowNo) + "</td>";
+        html += "<td>" + QString::number(rowNo) + "</td>";
         html += "<td>" + esc(name) + "</td>";
         html += "<td>" + esc(spec) + "</td>";
-        html += "<td align='center'>" + esc(unitName) + "</td>";
+        html += "<td>" + esc(unitName) + "</td>";
         html += "<td></td>";
-        html += "<td align='right'>" + QString::number(qty) + "</td>";
-        html += "<td align='right'>" + QString::number(unit, 'f', 2) + "</td>";
-        html += "<td align='right'>" + QString::number(amt, 'f', 2) + "</td>";
+        html += "<td>" + QString::number(qty) + "</td>";
+        html += "<td>" + QString::number(unit, 'f', 2) + "</td>";
+        html += "<td>" + QString::number(amt, 'f', 2) + "</td>";
         html += "<td></td>";
         html += "</tr>";
         ++rowNo;
     }
 
-    html += QString("<tr><td colspan='7' align='right'><b>合计</b></td>"
-                    "<td align='right'><b>%1</b></td><td></td></tr>")
+    html += QString("<tr><td colspan='7'><b>合计</b></td>"
+                    "<td><b>%1</b></td><td></td></tr>")
                 .arg(QString::number(totalAmt, 'f', 2));
 
     // ... 上面是合计行的代码 ...
