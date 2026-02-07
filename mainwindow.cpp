@@ -524,7 +524,12 @@ void MainWindow::onPSave() {
     }
 
     if (!m_products->submitAll()) {
-        QMessageBox::critical(this, "保存失败", m_products->lastError().text());
+        const QString dbError = m_products->lastError().text();
+        if (dbError.contains("products.barcode", Qt::CaseInsensitive)) {
+            QMessageBox::critical(this, "保存失败", "条码输入冲突");
+        } else {
+            QMessageBox::critical(this, "保存失败", dbError);
+        }
         m_products->revertAll();
         return;
     }
