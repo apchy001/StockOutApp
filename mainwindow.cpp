@@ -36,6 +36,7 @@ MainWindow::MainWindow(QWidget *parent)
 
     ensureCompaniesSchema();
     ensureProductsSchema();
+    ensureShipmentsSchema();
     // 读取上次保存的“表格字号”
     QSettings st("YourCompany", "StockOutApp");
     m_tableFontPt = st.value("ui/tableFontPt", 10).toInt();
@@ -818,6 +819,8 @@ void MainWindow::onOutClear() {
     m_outModel->removeRows(0, m_outModel->rowCount());
     m_lastShipmentId = -1;
     ui->lblOutTotal->setText("合计金额：0");
+    ui->leOutSupplier->clear();
+    ui->leOutDeliverer->clear();
     ui->leOutBarcode->setFocus();
 }
 
@@ -833,6 +836,8 @@ void MainWindow::onOutCommit() {
 
     int companyId = ui->cbOutCompany->currentData().toInt();
     QString date = ui->deOutDate->date().toString("yyyy-MM-dd");
+    QString supplier = ui->leOutSupplier->text().trimmed();
+    QString deliverer = ui->leOutDeliverer->text().trimmed();
 
     QSqlDatabase db = QSqlDatabase::database();
     if (!db.transaction()) {
@@ -847,9 +852,12 @@ void MainWindow::onOutCommit() {
 
     // 1) 创建 shipments
     QSqlQuery insShip(db);
-    insShip.prepare("INSERT INTO shipments(company_id, ship_date, total_amount, note) VALUES(?,?,0,'')");
+    insShip.prepare("INSERT INTO shipments(company_id, ship_date, supplier, deliverer, total_amount, note) "
+                    "VALUES(?,?,?,?,0,'')");
     insShip.addBindValue(companyId);
     insShip.addBindValue(date);
+    insShip.addBindValue(supplier);
+    insShip.addBindValue(deliverer);
     if (!insShip.exec()) return rollbackFail(insShip.lastError().text());
 
     int shipmentId = insShip.lastInsertId().toInt();
@@ -1063,7 +1071,7 @@ QString MainWindow::safeFileName(QString s) {
 QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
     QSqlQuery q;
     q.prepare(R"(
-        SELECT c.name, s.ship_date, s.total_amount
+        SELECT c.name, s.ship_date, s.total_amount, s.supplier, s.deliverer
         FROM shipments s
         JOIN companies c ON c.id = s.company_id
         WHERE s.id = ?
@@ -1077,14 +1085,16 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
     const QString company  = q.value(0).toString();
     const QString shipDate = q.value(1).toString();
     const double totalAmt  = q.value(2).toDouble();
+    const QString supplier = q.value(3).toString();
+    const QString deliverer = q.value(4).toString();
 
     auto esc = [](const QString& s){ return s.toHtmlEscaped(); };
 
     QString html;
     html += "<html><head><meta charset='utf-8'></head><body>";
     html += "<h2 style='margin:0'>出货单</h2>";
-    html += QString("<p style='margin:6px 0'>公司：%1<br>日期：%2<br>单号：%3</p>")
-                .arg(esc(company), esc(shipDate))
+    html += QString("<p style='margin:6px 0'>公司：%1<br>供应商：%2　送货人：%3<br>日期：%4<br>单号：%5</p>")
+                .arg(esc(company), esc(supplier), esc(deliverer), esc(shipDate))
                 .arg(shipmentId);
 
     html += "<table border='1' cellspacing='0' cellpadding='6' width='100%'>";
@@ -1337,6 +1347,22 @@ void MainWindow::ensureProductsSchema()
     }
 }
 
+void MainWindow::ensureShipmentsSchema()
+{
+    if (!hasColumn("shipments", "supplier")) {
+        QSqlQuery q;
+        if (!q.exec("ALTER TABLE shipments ADD COLUMN supplier TEXT NOT NULL DEFAULT ''")) {
+            QMessageBox::warning(this, "数据库升级失败", q.lastError().text());
+        }
+    }
+    if (!hasColumn("shipments", "deliverer")) {
+        QSqlQuery q;
+        if (!q.exec("ALTER TABLE shipments ADD COLUMN deliverer TEXT NOT NULL DEFAULT ''")) {
+            QMessageBox::warning(this, "数据库升级失败", q.lastError().text());
+        }
+    }
+}
+
 bool MainWindow::productHasRefs(int productId) const
 {
     auto hasRef = [&](const QString& table) -> bool {
@@ -1446,4 +1472,3 @@ void MainWindow::onPToggleActive()
     m_products->select();
     QMessageBox::information(this, "完成", QString("已%1：%2").arg(newVal ? "启用" : "停用").arg(name));
 }
-

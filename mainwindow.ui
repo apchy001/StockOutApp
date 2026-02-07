@@ -336,6 +336,30 @@
          </layout>
         </item>
         <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_outExtra" stretch="1,1">
+          <item>
+           <widget class="QLineEdit" name="leOutSupplier">
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
+            </property>
+            <property name="placeholderText">
+             <string>供应商</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="leOutDeliverer">
+            <property name="alignment">
+             <set>Qt::AlignmentFlag::AlignCenter</set>
+            </property>
+            <property name="placeholderText">
+             <string>送货人</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
          <widget class="QTableView" name="tvOutItems"/>
         </item>
         <item>

@@ -93,6 +93,7 @@ private:
     void ensureCompaniesSchema();
     bool companyHasShipments(int companyId) const;
     void ensureProductsSchema();
+    void ensureShipmentsSchema();
     bool productHasRefs(int productId) const;
 
 };
