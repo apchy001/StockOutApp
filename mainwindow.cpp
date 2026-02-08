@@ -29,6 +29,12 @@
 #include <QSizePolicy>
 #include <QStyledItemDelegate>
 #include <QComboBox>
+#include <QDialog>
+#include <QFormLayout>
+#include <QDialogButtonBox>
+#include <QDoubleSpinBox>
+#include <QSpinBox>
+#include <QLabel>
 
 namespace {
 QStringList unitOptions() {
@@ -472,12 +478,73 @@ void MainWindow::onPReset() {
 }
 
 void MainWindow::onPAdd() {
+    QDialog dialog(this);
+    dialog.setWindowTitle("添加商品");
+    dialog.setModal(true);
+
+    auto *formLayout = new QFormLayout(&dialog);
+    auto *nameEdit = new QLineEdit(&dialog);
+    auto *specEdit = new QLineEdit(&dialog);
+    auto *unitCombo = new QComboBox(&dialog);
+    unitCombo->addItems(unitOptions());
+    auto *barcodeEdit = new QLineEdit(&dialog);
+    auto *categoryEdit = new QLineEdit(&dialog);
+    auto *priceSpin = new QDoubleSpinBox(&dialog);
+    priceSpin->setMinimum(0);
+    priceSpin->setDecimals(2);
+    priceSpin->setMaximum(999999999);
+    auto *stockSpin = new QSpinBox(&dialog);
+    stockSpin->setMinimum(0);
+    stockSpin->setMaximum(999999999);
+
+    formLayout->addRow("名称*", nameEdit);
+    formLayout->addRow("规格", specEdit);
+    formLayout->addRow("单位", unitCombo);
+    formLayout->addRow("条码*", barcodeEdit);
+    formLayout->addRow("分类", categoryEdit);
+    formLayout->addRow("单价*", priceSpin);
+    formLayout->addRow("库存*", stockSpin);
+
+    auto *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
+                                           Qt::Horizontal, &dialog);
+    buttonBox->button(QDialogButtonBox::Ok)->setText("确定");
+    buttonBox->button(QDialogButtonBox::Cancel)->setText("取消");
+    formLayout->addRow(buttonBox);
+
+    connect(buttonBox, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    connect(buttonBox, &QDialogButtonBox::accepted, &dialog, [&]() {
+        const QString name = nameEdit->text().trimmed();
+        const QString barcode = barcodeEdit->text().trimmed();
+        if (name.isEmpty()) {
+            QMessageBox::warning(&dialog, "校验失败", "名称不能为空。");
+            nameEdit->setFocus();
+            return;
+        }
+        if (barcode.isEmpty()) {
+            QMessageBox::warning(&dialog, "校验失败", "条码不能为空。");
+            barcodeEdit->setFocus();
+            return;
+        }
+        dialog.accept();
+    });
+
+    if (dialog.exec() != QDialog::Accepted) return;
+
     const int row = m_products->rowCount();
     m_products->insertRow(row);
-    const int colUnit = m_products->fieldIndex("unit");
-    if (colUnit >= 0) {
-        m_products->setData(m_products->index(row, colUnit), unitOptions().value(0));
-    }
+    auto setIfExists = [this, row](const QString& field, const QVariant& value) {
+        const int col = m_products->fieldIndex(field);
+        if (col >= 0) {
+            m_products->setData(m_products->index(row, col), value);
+        }
+    };
+    setIfExists("name", nameEdit->text().trimmed());
+    setIfExists("spec", specEdit->text().trimmed());
+    setIfExists("unit", unitCombo->currentText());
+    setIfExists("barcode", barcodeEdit->text().trimmed());
+    setIfExists("category", categoryEdit->text().trimmed());
+    setIfExists("unit_price", priceSpin->value());
+    setIfExists("stock_qty", stockSpin->value());
     ui->tvProducts->selectRow(row);
 }
 
