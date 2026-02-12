@@ -382,6 +382,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->deOutDate->setDate(QDate::currentDate());
     ui->leOutQty->setText("1");
+    ui->leOutSupplier->setText("山东挨着家蔬菜配送有限公司");
+    ui->leOutDeliverer->setText("尚明学");
     // ✅ UI：数量输入别占太宽，给“公司”更多显示空间
     ui->leOutQty->setMaximumWidth(90);
     ui->cbOutCompany->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
