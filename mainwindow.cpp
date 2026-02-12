@@ -40,7 +40,7 @@
 
 namespace {
 QStringList unitOptions() {
-    return {"瓶", "袋", "盒", "桶", "箱"};
+    return {"瓶", "袋", "盒", "桶", "箱", "公斤", "包", "副", "把", "个", "件", "块", "根", "套"};
 }
 
 class UnitComboDelegate : public QStyledItemDelegate {
@@ -1232,7 +1232,11 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
     const QString supplier = ui->leOutSupplier ? ui->leOutSupplier->text() : QString();
     const QString deliverer = ui->leOutDeliverer ? ui->leOutDeliverer->text() : QString();
 
-    auto esc = [](const QString& s){ return s.toHtmlEscaped(); };
+    auto esc = [](const QString& s){
+        QString out = s.toHtmlEscaped();
+        out.replace(' ', "&nbsp;");
+        return out;
+    };
 
     QString sheet;
     sheet += "<div class='sheet'>";
@@ -1240,8 +1244,8 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
     sheet += "<table style='width:100%;border-collapse:collapse;'>";
     sheet += "<tr>";
     sheet += "<div style='width:100%;text-align:center;margin-top:10px;"
-             "font-size:60px;font-weight:700;'>";
-    sheet += "健力源  " + esc(company) + "  计划表</td>";
+             "font-size:65px;font-weight:700;'>";
+    sheet += "健力源  " + esc(company) + " 计划表</td>";
     sheet += "</tr>";
     sheet += "</table>";
     sheet += "<div style='width:100%;text-align:center;margin-top:6px;'>";
@@ -1294,7 +1298,7 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
         ++rowNo;
     }
 
-    sheet += QString("<tr><td colspan='7'><b>合计</b></td>"
+    sheet += QString("<tr><td colspan='7' style='text-align:right;'><b>合计</b></td>"
                      "<td><b>%1</b></td><td></td></tr>")
                  .arg(QString::number(totalAmt, 'f', 2));
 
