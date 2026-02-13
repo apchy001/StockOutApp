@@ -1254,10 +1254,10 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
     sheet += "</div>";
     sheet += "</div>";
 
-    sheet += "<table border='1' cellspacing='0' cellpadding='10' width='100%' style='border-collapse:collapse;text-align:center;'>";
+    sheet += "<table class='out-table' border='1' cellspacing='0' cellpadding='5' width='100%' style='border-collapse:collapse;text-align:center;table-layout:fixed;'>";
     sheet += "<tr>"
-             "<th style='font-size:11pt;'>序号</th><th style='font-size:11pt;'>品名</th><th style='font-size:11pt;'>规格</th><th style='font-size:11pt;'>单位</th>"
-             "<th style='font-size:11pt;'>申请数量</th><th style='font-size:11pt;'>验收数量</th><th style='font-size:11pt;'>单价</th><th style='font-size:11pt;'>合计金额</th><th style='font-size:11pt;'>库位</th>"
+             "<th style='font-size:10pt;width:5%;'>序号</th><th style='font-size:10pt;width:16%;'>品名</th><th style='font-size:10pt;width:14%;'>规格</th><th style='font-size:10pt;width:7%;'>单位</th>"
+             "<th style='font-size:10pt;width:10%;'>申请数量</th><th style='font-size:10pt;width:10%;'>验收数量</th><th style='font-size:10pt;width:10%;'>单价</th><th style='font-size:10pt;width:12%;'>合计金额</th><th style='font-size:10pt;width:16%;'>库位</th>"
              "</tr>";
 
     QSqlQuery qi;
@@ -1284,21 +1284,21 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
         const double amt     = qi.value(6).toDouble();
 
         sheet += "<tr>";
-        sheet += "<td style='font-size:11pt;'>" + QString::number(rowNo) + "</td>";
-        sheet += "<td style='font-size:11pt;'>" + esc(name) + "</td>";
-        sheet += "<td style='font-size:11pt;'>" + esc(spec) + "</td>";
-        sheet += "<td style='font-size:11pt;'>" + esc(unitName) + "</td>";
-        sheet += "<td style='font-size:11pt;'></td>";
-        sheet += "<td style='font-size:11pt;'>" + QString::number(qty) + "</td>";
-        sheet += "<td style='font-size:11pt;'>" + QString::number(unit, 'f', 2) + "</td>";
-        sheet += "<td style='font-size:11pt;'>" + QString::number(amt, 'f', 2) + "</td>";
-        sheet += "<td style='font-size:11pt;'>" + esc(QStringLiteral("山东挨着家库")) + "</td>";
+        sheet += "<td style='font-size:10pt;'>" + QString::number(rowNo) + "</td>";
+        sheet += "<td style='font-size:10pt;'>" + esc(name) + "</td>";
+        sheet += "<td style='font-size:10pt;'>" + esc(spec) + "</td>";
+        sheet += "<td style='font-size:10pt;'>" + esc(unitName) + "</td>";
+        sheet += "<td style='font-size:10pt;'></td>";
+        sheet += "<td style='font-size:10pt;'>" + QString::number(qty) + "</td>";
+        sheet += "<td style='font-size:10pt;'>" + QString::number(unit, 'f', 2) + "</td>";
+        sheet += "<td style='font-size:10pt;'>" + QString::number(amt, 'f', 2) + "</td>";
+        sheet += "<td style='font-size:10pt;'>" + esc(QStringLiteral("山东挨着家库")) + "</td>";
         sheet += "</tr>";
         ++rowNo;
     }
 
-    sheet += QString("<tr><td colspan='7' style='text-align:right;font-size:11pt;'><b>合计</b></td>"
-                     "<td style='font-size:11pt;'><b>%1</b></td><td style='font-size:11pt;'></td></tr>")
+    sheet += QString("<tr><td colspan='7' style='text-align:right;font-size:10pt;'><b>合计</b></td>"
+                     "<td style='font-size:10pt;'><b>%1</b></td><td style='font-size:10pt;'></td></tr>")
                  .arg(QString::number(totalAmt, 'f', 2));
 
     // ... 上面是合计行的代码 ...
@@ -1336,7 +1336,8 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
     html += "@page{margin:0;}";
     html += "html,body{margin:0;padding:0;}";
     html += "body{font-family:'SimSun';font-size:14pt;}";
-    html += ".sheet{width:100%;box-sizing:border-box;}";
+    html += ".sheet{width:100%;box-sizing:border-box;padding:0 8mm;}";
+    html += ".out-table th,.out-table td{word-break:break-all;line-height:1.25;}";
     html += "</style></head><body>";
     html += sheet;
     html += "</body></html>";
@@ -1350,7 +1351,7 @@ bool MainWindow::printShipment(int shipmentId, QString* err) {
 
     QPrinter printer(QPrinter::HighResolution);
     printer.setDocName(QString("Shipment_%1").arg(shipmentId));
-    const QPageSize doubleSheetSize(QSizeF(230, 140), QPageSize::Millimeter, "Custom_240x594");
+    const QPageSize doubleSheetSize(QSizeF(240, 140), QPageSize::Millimeter, "Custom_240x594");
     printer.setPageSize(doubleSheetSize);
     printer.setPageOrientation(QPageLayout::Portrait);
     printer.setFullPage(true);
