@@ -1333,10 +1333,10 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
     QString html;
     html += "<html><head><meta charset='utf-8'>";
     html += "<style>";
-    html += "@page{margin:0;}";
+    html += "@page{margin:0mm 10mm;}";
     html += "html,body{margin:0;padding:0;}";
     html += "body{font-family:'SimSun';font-size:14pt;}";
-    html += ".sheet{width:100%;box-sizing:border-box;padding:0 8mm;}";
+    html += ".sheet{width:100%;box-sizing:border-box;padding:0;}";
     html += ".out-table th,.out-table td{word-break:break-all;line-height:1.25;}";
     html += "</style></head><body>";
     html += sheet;
@@ -1354,8 +1354,8 @@ bool MainWindow::printShipment(int shipmentId, QString* err) {
     const QPageSize doubleSheetSize(QSizeF(240, 140), QPageSize::Millimeter, "Custom_240x594");
     printer.setPageSize(doubleSheetSize);
     printer.setPageOrientation(QPageLayout::Portrait);
-    printer.setFullPage(true);
-    printer.setPageMargins(QMarginsF(0, 0, 0, 0), QPageLayout::Millimeter);
+    printer.setFullPage(false);
+    printer.setPageMargins(QMarginsF(8, 10, 8, 10), QPageLayout::Millimeter);
 
     QTextDocument doc;
     QFont printFont("SimSun");
