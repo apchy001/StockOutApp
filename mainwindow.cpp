@@ -1295,7 +1295,7 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
         sheet += "<td style='font-size:12pt;'>" + QString::number(qty) + "</td>";
         sheet += "<td style='font-size:12pt;'>" + QString::number(unit, 'f', 2) + "</td>";
         sheet += "<td style='font-size:12pt;'>" + QString::number(amt, 'f', 2) + "</td>";
-        sheet += "<td style='font-size:12pt;'></td>";
+        sheet += "<td style='font-size:12pt;'>" + esc(QStringLiteral("挨着家蔬菜")) + "</td>";
         sheet += "</tr>";
         ++rowNo;
     }
@@ -1311,20 +1311,21 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
     // 1. 外层容器：宽度设为 90% 或 100% 都可以，margin-top 稍微加大一点(30px)拉开和表格的距离
     sheet += "<div style='width:100%; margin:36px auto 0 auto; font-size:12pt;'>";
 
+     const QString signLabelStyle = QStringLiteral("font-size:12pt;");
     // 2. 签字栏表格：宽度铺满，去掉边框
     sheet += "  <table width='100%' style='border:none; border-collapse:collapse;'>";
     sheet += "    <tr>";
 
     // 【左侧】申请人：align='left' 强制靠左
     // 这里的 padding-left:10px 是为了不让文字紧贴纸张边缘，留一点点呼吸感，比 120px 安全得多
-    sheet += "      <td width='33%' align='left' style='border:none; padding-left:10px;'>申请人：__________</td>";
+    sheet += "      <td width='33%' align='left' style='border:none; padding-left:10px;'><span style='" + signLabelStyle + "'>申请人</span>：__________</td>";
 
     // 【中间】验收人：align='center' 强制居中
-    sheet += "      <td width='34%' align='center' style='border:none;'>验收人：__________</td>";
+    sheet += "      <td width='34%' align='center' style='border:none;'><span style='" + signLabelStyle + "'>验收人</span>：__________</td>";
 
     // 【右侧】审核人：align='right' 强制靠右
     // 同样加一点 padding-right 防止紧贴右边缘
-    sheet += "      <td width='33%' align='right' style='border:none; padding-right:10px;'>审核人：__________</td>";
+    sheet += "      <td width='33%' align='right' style='border:none; padding-right:10px;'><span style='" + signLabelStyle + "'>审核人</span>：__________</td>";
 
     sheet += "    </tr>";
     sheet += "  </table>";
@@ -1351,7 +1352,7 @@ bool MainWindow::printShipment(int shipmentId, QString* err) {
 
     QPrinter printer(QPrinter::HighResolution);
     printer.setDocName(QString("Shipment_%1").arg(shipmentId));
-    const QPageSize doubleSheetSize(QSizeF(240, 480), QPageSize::Millimeter, "Custom_240x594");
+    const QPageSize doubleSheetSize(QSizeF(240, 140), QPageSize::Millimeter, "Custom_240x594");
     printer.setPageSize(doubleSheetSize);
     printer.setPageOrientation(QPageLayout::Portrait);
     printer.setFullPage(true);
