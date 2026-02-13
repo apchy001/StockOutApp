@@ -1260,7 +1260,7 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
     sheet += "<table border='1' cellspacing='0' cellpadding='12' width='100%' style='border-collapse:collapse;text-align:center;'>";
     sheet += "<tr>"
              "<th style='font-size:12pt;'>序号</th><th style='font-size:12pt;'>品名</th><th style='font-size:12pt;'>规格</th><th style='font-size:12pt;'>单位</th>"
-             "<th style='font-size:12pt;'>申请数量</th><th style='font-size:12pt;'>验收数量</th><th style='font-size:12pt;'>单价</th><th style='font-size:12pt;'>合计金额</th><th style='font-size:12pt;'>备注</th>"
+             "<th style='font-size:12pt;'>申请数量</th><th style='font-size:12pt;'>验收数量</th><th style='font-size:12pt;'>单价</th><th style='font-size:12pt;'>合计金额</th><th style='font-size:12pt;'>库位</th>"
              "</tr>";
 
     QSqlQuery qi;
@@ -1295,7 +1295,7 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
         sheet += "<td style='font-size:12pt;'>" + QString::number(qty) + "</td>";
         sheet += "<td style='font-size:12pt;'>" + QString::number(unit, 'f', 2) + "</td>";
         sheet += "<td style='font-size:12pt;'>" + QString::number(amt, 'f', 2) + "</td>";
-        sheet += "<td style='font-size:12pt;'>" + esc(QStringLiteral("挨着家蔬菜")) + "</td>";
+        sheet += "<td style='font-size:12pt;'>" + esc(QStringLiteral("山东挨着家库")) + "</td>";
         sheet += "</tr>";
         ++rowNo;
     }
@@ -1336,8 +1336,9 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
     QString html;
     html += "<html><head><meta charset='utf-8'>";
     html += "<style>";
-    html += "@page{margin:2mm 4mm 4mm 4mm;}";
-    html += "body{font-family:'SimSun';margin:0;font-size:15pt;}";
+    html += "@page{margin:0;}";
+    html += "html,body{margin:0;padding:0;}";
+    html += "body{font-family:'SimSun';font-size:15pt;}";
     html += ".sheet{width:100%;box-sizing:border-box;}";
     html += "</style></head><body>";
     html += sheet;
@@ -1356,12 +1357,13 @@ bool MainWindow::printShipment(int shipmentId, QString* err) {
     printer.setPageSize(doubleSheetSize);
     printer.setPageOrientation(QPageLayout::Portrait);
     printer.setFullPage(true);
-    printer.setPageMargins(QMarginsF(2, 2, 2, 2), QPageLayout::Millimeter);
+    printer.setPageMargins(QMarginsF(0, 0, 0, 0), QPageLayout::Millimeter);
 
     QTextDocument doc;
     QFont printFont("SimSun");
     printFont.setPointSize(15);
     doc.setDefaultFont(printFont);
+    doc.setDocumentMargin(0);
     doc.setHtml(html);
 
     QPrintPreviewDialog preview(&printer, this);
