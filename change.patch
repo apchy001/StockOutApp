@@ -1,0 +1,112 @@
+diff --git a/mainwindow.cpp b/mainwindow.cpp
+index aa819b1cacc5c9fd37f16ef77c9299020f689939..2ab7de5e990c4d5c4911a657a188836cbbc9d366 100644
+--- a/mainwindow.cpp
++++ b/mainwindow.cpp
+@@ -1275,52 +1275,52 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
+     }
+ 
+     int rowNo = 1;
+     while (qi.next()) {
+         const QString name   = qi.value(0).toString();
+         const QString spec   = qi.value(1).toString();
+         const QString unitName = qi.value(2).toString();
+         const int qty        = qi.value(4).toInt();
+         const double unit    = qi.value(5).toDouble();
+         const double amt     = qi.value(6).toDouble();
+ 
+         sheet += "<tr>";
+         sheet += "<td style='font-size:10pt;'>" + QString::number(rowNo) + "</td>";
+         sheet += "<td style='font-size:10pt;'>" + esc(name) + "</td>";
+         sheet += "<td style='font-size:10pt;'>" + esc(spec) + "</td>";
+         sheet += "<td style='font-size:10pt;'>" + esc(unitName) + "</td>";
+         sheet += "<td style='font-size:10pt;'></td>";
+         sheet += "<td style='font-size:10pt;'>" + QString::number(qty) + "</td>";
+         sheet += "<td style='font-size:10pt;'>" + QString::number(unit, 'f', 2) + "</td>";
+         sheet += "<td style='font-size:10pt;'>" + QString::number(amt, 'f', 2) + "</td>";
+         sheet += "<td style='font-size:10pt;'>" + esc(QStringLiteral("山东挨着家库")) + "</td>";
+         sheet += "</tr>";
+         ++rowNo;
+     }
+ 
+-    sheet += QString("<tr><td colspan='7' style='text-align:right;font-size:10pt;'><b>合计</b></td>"
+-                     "<td style='font-size:10pt;'><b>%1</b></td><td style='font-size:10pt;'></td></tr>")
++    sheet += QString("<tr><td colspan='7' style='text-align:right;font-size:10pt;font-weight:normal;'>合计</td>"
++                     "<td style='font-size:10pt;font-weight:normal;'>%1</td><td style='font-size:10pt;'></td></tr>")
+                  .arg(QString::number(totalAmt, 'f', 2));
+ 
+     // ... 上面是合计行的代码 ...
+     sheet += "</table>";
+ 
+     // --- 签字栏开始 ---
+     // 1. 外层容器：宽度设为 90% 或 100% 都可以，margin-top 稍微加大一点(30px)拉开和表格的距离
+     sheet += "<div style='width:100%; margin:30px auto 0 auto; font-size:11pt;'>";
+ 
+      const QString signLabelStyle = QStringLiteral("font-size:11pt;");
+     // 2. 签字栏表格：宽度铺满，去掉边框
+     sheet += "  <table width='100%' style='border:none; border-collapse:collapse;'>";
+     sheet += "    <tr>";
+ 
+     // 【左侧】申请人：align='left' 强制靠左
+     // 这里的 padding-left:10px 是为了不让文字紧贴纸张边缘，留一点点呼吸感，比 120px 安全得多
+     sheet += "      <td width='33%' align='left' style='border:none; padding-left:10px;'><span style='" + signLabelStyle + "'>申请人</span>：__________</td>";
+ 
+     // 【中间】验收人：align='center' 强制居中
+     sheet += "      <td width='34%' align='center' style='border:none;'><span style='" + signLabelStyle + "'>验收人</span>：__________</td>";
+ 
+     // 【右侧】审核人：align='right' 强制靠右
+     // 同样加一点 padding-right 防止紧贴右边缘
+     sheet += "      <td width='33%' align='right' style='border:none; padding-right:10px;'><span style='" + signLabelStyle + "'>审核人</span>：__________</td>";
+ 
+@@ -1333,51 +1333,51 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
+     QString html;
+     html += "<html><head><meta charset='utf-8'>";
+     html += "<style>";
+     html += "@page{margin:0mm 10mm;}";
+     html += "html,body{margin:0;padding:0;}";
+     html += "body{font-family:'SimSun';font-size:14pt;}";
+     html += ".sheet{width:100%;box-sizing:border-box;padding:0;}";
+     html += ".out-table th,.out-table td{word-break:break-all;line-height:1.25;}";
+     html += "</style></head><body>";
+     html += sheet;
+     html += "</body></html>";
+ 
+     return html;
+ }
+ 
+ bool MainWindow::printShipment(int shipmentId, QString* err) {
+     QString html = buildShipmentHtml(shipmentId, err);
+     if (html.isEmpty()) return false;
+ 
+     QPrinter printer(QPrinter::HighResolution);
+     printer.setDocName(QString("Shipment_%1").arg(shipmentId));
+     const QPageSize doubleSheetSize(QSizeF(240, 140), QPageSize::Millimeter, "Custom_240x594");
+     printer.setPageSize(doubleSheetSize);
+     printer.setPageOrientation(QPageLayout::Portrait);
+     printer.setFullPage(false);
+-    printer.setPageMargins(QMarginsF(8, 10, 8, 10), QPageLayout::Millimeter);
++    printer.setPageMargins(QMarginsF(8, 0, 8, 0), QPageLayout::Millimeter);
+ 
+     QTextDocument doc;
+     QFont printFont("SimSun");
+     printFont.setPointSize(14);
+     doc.setDefaultFont(printFont);
+     doc.setDocumentMargin(0);
+     doc.setHtml(html);
+     doc.setPageSize(printer.pageRect(QPrinter::Point).size());
+ 
+     QPrintPreviewDialog preview(&printer, this);
+     preview.setWindowTitle("打印预览");
+     connect(&preview, &QPrintPreviewDialog::paintRequested, this, [&](QPrinter* p) {
+         doc.print(p);
+     });
+ 
+     if (preview.exec() != QDialog::Accepted) return false;
+     return true;
+ }
+ 
+ void MainWindow::applyTableFont(bool save) {
+     m_tableFontPt = std::clamp(m_tableFontPt, 8, 24);
+ 
+     auto applyOne = [&](QTableView* tv) {
+         if (!tv) return;
+ 

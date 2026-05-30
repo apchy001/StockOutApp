@@ -40,7 +40,7 @@
 
 namespace {
 QStringList unitOptions() {
-    return {"瓶", "袋", "盒", "桶", "箱"};
+    return {"瓶", "袋", "盒", "桶", "箱", "公斤", "包", "副", "把", "个", "件", "块", "根", "套"};
 }
 
 class UnitComboDelegate : public QStyledItemDelegate {
@@ -382,6 +382,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     ui->deOutDate->setDate(QDate::currentDate());
     ui->leOutQty->setText("1");
+    ui->leOutSupplier->setText("山东挨着家蔬菜配送有限公司");
+    ui->leOutDeliverer->setText("尚明学");
     // ✅ UI：数量输入别占太宽，给“公司”更多显示空间
     ui->leOutQty->setMaximumWidth(90);
     ui->cbOutCompany->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
@@ -1212,7 +1214,402 @@ QString MainWindow::safeFileName(QString s) {
     return s;
 }
 
-QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
+// QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
+//     QSqlQuery q;
+//     q.prepare(R"(
+//         SELECT c.name, s.ship_date, s.total_amount
+//         FROM shipments s
+//         JOIN companies c ON c.id = s.company_id
+//         WHERE s.id = ?
+//     )");
+//     q.addBindValue(shipmentId);
+//     if (!q.exec() || !q.next()) {
+//         if (err) *err = "查询出库单头信息失败";
+//         return {};
+//     }
+
+//     const QString company  = q.value(0).toString();
+//     const QString shipDate = q.value(1).toString();
+//     const double totalAmt  = q.value(2).toDouble();
+//     const QString supplier = ui->leOutSupplier ? ui->leOutSupplier->text() : QString();
+//     const QString deliverer = ui->leOutDeliverer ? ui->leOutDeliverer->text() : QString();
+
+//     auto esc = [](const QString& s){ return s.toHtmlEscaped(); };
+
+//     QString sheet;
+//     sheet += "<div class='sheet'>";
+//     sheet += "<div style='margin-bottom:8px;'>";
+//     sheet += "<table style='width:100%;border-collapse:collapse;'>";
+//     sheet += "<tr>";
+//     sheet += "<div style='width:100%;text-align:center;margin-top:10px;"
+//              "font-size:19px;font-weight:700;'>";
+//     sheet += "健力源  " + esc(company) + "  计划表</td>";
+//     sheet += "</tr>";
+//     sheet += "</table>";
+//     sheet += "<div style='width:100%;text-align:center;margin-top:6px;'>";
+//     sheet += "供货商：" + esc(supplier)
+//              + "&nbsp;&nbsp;&nbsp;送货人：" + esc(deliverer)
+//              + "&nbsp;&nbsp;&nbsp;日期：" + esc(shipDate);
+//     sheet += "</div>";
+//     sheet += "</div>";
+
+//     sheet += "<table border='1' cellspacing='0' cellpadding='6' width='100%' style='border-collapse:collapse;text-align:center;'>";
+//     sheet += "<tr>"
+//              "<th>序号</th><th>品名</th><th>规格</th><th>单位</th>"
+//              "<th>申请数量</th><th>验收数量</th><th>单价</th><th>合计金额</th><th>库位</th>"
+//              "</tr>";
+
+//     QSqlQuery qi;
+//     qi.prepare(R"(
+//         SELECT p.name, p.spec, p.unit, p.barcode, i.qty, i.unit_price, i.amount
+//         FROM shipment_items i
+//         JOIN products p ON p.id = i.product_id
+//         WHERE i.shipment_id = ?
+//         ORDER BY p.name
+//     )");
+//     qi.addBindValue(shipmentId);
+//     if (!qi.exec()) {
+//         if (err) *err = "查询出库明细失败";
+//         return {};
+//     }
+
+//     int rowNo = 1;
+//     while (qi.next()) {
+//         const QString name   = qi.value(0).toString();
+//         const QString spec   = qi.value(1).toString();
+//         const QString unitName = qi.value(2).toString();
+//         const int qty        = qi.value(4).toInt();
+//         const double unit    = qi.value(5).toDouble();
+//         const double amt     = qi.value(6).toDouble();
+
+//         sheet += "<tr>";
+//         sheet += "<td>" + QString::number(rowNo) + "</td>";
+//         sheet += "<td>" + esc(name) + "</td>";
+//         sheet += "<td>" + esc(spec) + "</td>";
+//         sheet += "<td>" + esc(unitName) + "</td>";
+//         sheet += "<td></td>";
+//         sheet += "<td>" + QString::number(qty) + "</td>";
+//         sheet += "<td>" + QString::number(unit, 'f', 2) + "</td>";
+//         sheet += "<td>" + QString::number(amt, 'f', 2) + "</td>";
+//         sheet += "<td class='left'>" + esc(QStringLiteral("山东挨着家库")) + "</td>";
+//         sheet += "</tr>";
+//         ++rowNo;
+//     }
+
+//     sheet += QString("<tr><td colspan='7' style='text-align:right;'><b>合计</b></td>"
+//                      "<td><b>%1</b></td><td></td></tr>")
+//                  .arg(QString::number(totalAmt, 'f', 2));
+
+//     // ... 上面是合计行的代码 ...
+//     sheet += "</table>";
+
+//     // --- 签字栏开始 ---
+//     // 1. 外层容器：宽度设为 90% 或 100% 都可以，margin-top 稍微加大一点(30px)拉开和表格的距离
+//     sheet += "<div style='width:98%; margin:5px auto 0 auto;'>";
+
+//     // 2. 签字栏表格：宽度铺满，去掉边框
+//     sheet += "  <table width='100%' style='border:none; border-collapse:collapse;'>";
+//     sheet += "    <tr>";
+
+//     // 【左侧】申请人：align='left' 强制靠左
+//     // 这里的 padding-left:10px 是为了不让文字紧贴纸张边缘，留一点点呼吸感，比 120px 安全得多
+//     sheet += "      <td width='33%' align='left' style='border:none; padding-left:10px;'>申请人：__________</td>";
+
+//     // 【中间】验收人：align='center' 强制居中
+//     sheet += "      <td width='34%' align='center' style='border:none;'>验收人：__________</td>";
+
+//     // 【右侧】审核人：align='right' 强制靠右
+//     // 同样加一点 padding-right 防止紧贴右边缘
+//     sheet += "      <td width='33%' align='right' style='border:none; padding-right:10px;'>审核人：__________</td>";
+
+//     sheet += "    </tr>";
+//     sheet += "  </table>";
+//     sheet += "</div>";
+//     sheet += "</div>";
+//     // --- 签字栏结束 ---
+
+//     QString html;
+//     html += "<html><head><meta charset='utf-8'>";
+//     html += "<style>";
+//     html += "body{font-family:'SimSun';}";
+//     html += ".sheet{width:100%;box-sizing:border-box;}";
+//     html += "</style></head><body>";
+//     html += sheet;
+//     html += "</body></html>";
+
+//     return html;
+// }
+
+// bool MainWindow::printShipment(int shipmentId, QString* err) {
+//     QString html = buildShipmentHtml(shipmentId, err);
+//     if (html.isEmpty()) return false;
+
+//     QPrinter printer(QPrinter::HighResolution);
+//     printer.setDocName(QString("Shipment_%1").arg(shipmentId));
+
+//     const QPageSize doubleSheetSize(QSizeF(240, 140), QPageSize::Millimeter, "Double_Page");
+//     printer.setPageSize(doubleSheetSize);
+//     printer.setPageOrientation(QPageLayout::Portrait);
+
+//     printer.setFullPage(false); // ✅ 关键：别让原点被挪走
+//     printer.setPageMargins(QMarginsF(20, 0, 20, 0), QPageLayout::Millimeter);
+
+//     QTextDocument doc;
+//     doc.setDefaultStyleSheet(R"(
+//       html, body { margin:0; padding:0; }
+//       table { margin:0; border-collapse:collapse; }
+//     )");
+//     doc.setHtml(html);
+//     doc.setDocumentMargin(0);  // ✅ 关键：doc 自带边距清零
+
+//     QPrintPreviewDialog preview(&printer, this);
+//     preview.setWindowTitle("打印预览");
+
+//     connect(&preview, &QPrintPreviewDialog::paintRequested, this, [&](QPrinter* p) {
+//         // ✅ 关键：让 doc 的分页尺寸 = 打印机的可用绘制区域
+//         doc.setPageSize(p->pageRect(QPrinter::Point).size());
+//         doc.print(p);
+//     });
+
+//     if (preview.exec() != QDialog::Accepted) return false;
+//     return true;
+// }
+
+// #include <QSqlQuery>
+// #include <QSqlError>
+// #include <QDebug>
+// #include <QTextDocument>
+// #include <QPrinter>
+// #include <QPrintPreviewDialog>
+// #include <QPageSize>
+// #include <QPageLayout>
+// #include <QMarginsF>
+
+// // =========================
+// // 生成出库单 HTML
+// // =========================
+// QString MainWindow::buildShipmentHtml(int shipmentId, QString* err)
+// {
+//     QSqlQuery q;
+//     q.prepare(R"(
+//         SELECT c.name, s.ship_date, s.total_amount
+//         FROM shipments s
+//         JOIN companies c ON c.id = s.company_id
+//         WHERE s.id = ?
+//     )");
+//     q.addBindValue(shipmentId);
+
+//     if (!q.exec() || !q.next()) {
+//         if (err) *err = "查询出库单头信息失败";
+//         return {};
+//     }
+
+//     const QString company    = q.value(0).toString();
+//     const QString shipDate   = q.value(1).toString();
+//     const double  totalAmt   = q.value(2).toDouble();
+
+//     const QString supplier   = ui->leOutSupplier  ? ui->leOutSupplier->text()  : QString();
+//     const QString deliverer  = ui->leOutDeliverer ? ui->leOutDeliverer->text() : QString();
+
+//     auto esc = [](const QString& s){ return s.toHtmlEscaped(); };
+
+//     // --- 明细 ---
+//     QSqlQuery qi;
+//     qi.prepare(R"(
+//         SELECT p.name, p.spec, p.unit, p.barcode, i.qty, i.unit_price, i.amount
+//         FROM shipment_items i
+//         JOIN products p ON p.id = i.product_id
+//         WHERE i.shipment_id = ?
+//         ORDER BY p.name
+//     )");
+//     qi.addBindValue(shipmentId);
+
+//     if (!qi.exec()) {
+//         if (err) *err = "查询出库明细失败";
+//         return {};
+//     }
+
+//     QString sheet;
+//     sheet += "<div class='sheet'>";
+
+//     // ===== 表头（纯 div，结构合法，避免 QTextDocument 自动“修复”搞出空白）=====
+//     sheet += "  <div class='hdr'>";
+//     sheet += "    <div class='title'>健力源&nbsp;&nbsp;" + esc(company) + "&nbsp;&nbsp;计划表</div>";
+//     sheet += "    <div class='sub'>供货商：" + esc(supplier)
+//              + "&nbsp;&nbsp;&nbsp;送货人：" + esc(deliverer)
+//              + "&nbsp;&nbsp;&nbsp;日期：" + esc(shipDate) + "</div>";
+//     sheet += "  </div>";
+
+//     // ===== 主表格 =====
+//     sheet += "<table class='main'>";
+//     sheet += "  <tr>"
+//              "    <th>序号</th><th>品名</th><th>规格</th><th>单位</th>"
+//              "    <th>申请数量</th><th>验收数量</th><th>单价</th><th>合计金额</th><th>库位</th>"
+//              "  </tr>";
+
+//     int rowNo = 1;
+//     while (qi.next()) {
+//         const QString name     = qi.value(0).toString();
+//         const QString spec     = qi.value(1).toString();
+//         const QString unitName = qi.value(2).toString();
+//         const int     qty      = qi.value(4).toInt();
+//         const double  unit     = qi.value(5).toDouble();
+//         const double  amt      = qi.value(6).toDouble();
+
+//         sheet += "  <tr>";
+//         sheet += "    <td>" + QString::number(rowNo) + "</td>";
+//         sheet += "    <td>" + esc(name) + "</td>";
+//         sheet += "    <td>" + esc(spec) + "</td>";
+//         sheet += "    <td>" + esc(unitName) + "</td>";
+//         sheet += "    <td></td>";
+//         sheet += "    <td>" + QString::number(qty) + "</td>";
+//         sheet += "    <td>" + QString::number(unit, 'f', 2) + "</td>";
+//         sheet += "    <td>" + QString::number(amt,  'f', 2) + "</td>";
+//         sheet += "    <td class='left'>" + esc(QStringLiteral("山东挨着家库")) + "</td>";
+//         sheet += "  </tr>";
+//         ++rowNo;
+//     }
+
+//     // 合计行：让“合计”靠右
+//     sheet += QString(
+//                  "  <tr>"
+//                  "    <td colspan='7' class='sumlabel'><b>合计</b></td>"
+//                  "    <td class='sumamt'><b>%1</b></td>"
+//                  "    <td></td>"
+//                  "  </tr>"
+//                  ).arg(QString::number(totalAmt, 'f', 2));
+
+//     sheet += "</table>";
+
+//     // ===== 签字栏 =====
+//     // sheet += "<div class='sign'>";
+//     // sheet += "  <table class='signTable'>";
+//     // sheet += "    <tr>";
+//     // sheet += "      <td class='signL'>申请人：__________</td>";
+//     // sheet += "      <td class='signC'>验收人：__________</td>";
+//     // sheet += "      <td class='signR'>审核人：__________</td>";
+//     // sheet += "    </tr>";
+//     // sheet += "  </table>";
+//     // sheet += "</div>";
+
+//         // --- 签字栏开始 ---
+//         // 1. 外层容器：宽度设为 90% 或 100% 都可以，margin-top 稍微加大一点(30px)拉开和表格的距离
+//         sheet += "<div style='width:98%; margin:5px auto 0 auto;'>";
+
+//         // 2. 签字栏表格：宽度铺满，去掉边框
+//         sheet += "  <table width='100%' style='border:none; border-collapse:collapse;'>";
+//         sheet += "    <tr>";
+
+//         // 【左侧】申请人：align='left' 强制靠左
+//         // 这里的 padding-left:10px 是为了不让文字紧贴纸张边缘，留一点点呼吸感，比 120px 安全得多
+//         sheet += "      <td width='33%' align='left' style='border:none; padding-left:10px;'>申请人：__________</td>";
+
+//         // 【中间】验收人：align='center' 强制居中
+//         sheet += "      <td width='34%' align='center' style='border:none;'>验收人：__________</td>";
+
+//         // 【右侧】审核人：align='right' 强制靠右
+//         // 同样加一点 padding-right 防止紧贴右边缘
+//         sheet += "      <td width='33%' align='right' style='border:none; padding-right:10px;'>审核人：__________</td>";
+
+//         sheet += "    </tr>";
+//         sheet += "  </table>";
+//         sheet += "</div>";
+//         sheet += "</div>";
+
+//     sheet += "</div>"; // .sheet
+
+//     // ===== 整体 HTML + 样式：关键是把所有默认 margin/padding 清零 =====
+//     QString html;
+//     html += "<html><head><meta charset='utf-8'>";
+
+//     html += "<style>";
+//     html += "html,body{margin:0;padding:0;font-family:'SimSun';}";
+//     html += "*{margin:0;padding:0;}";
+//     html += ".sheet{width:100%;box-sizing:border-box;}";
+//     html += ".hdr{padding:0 0 8px 0;}";
+//     html += ".title{text-align:center;font-size:19px;font-weight:700;line-height:1.2;}";
+//     html += ".sub{text-align:center;font-size:12px;line-height:1.2;margin-top:6px;}";
+
+//     html += "table{border-collapse:collapse;}";
+//     html += "table.main{width:100%;text-align:center;font-size:12px;}";
+//     html += "table.main th, table.main td{border:1px solid #000;padding:6px;}";
+//     html += "td.left{text-align:left;}";
+//     html += "td.sumlabel{text-align:right;}";
+//     html += "td.sumamt{text-align:left;}";
+
+//     html += ".sign{width:98%;margin:5px auto 0 auto;}";
+//     html += "table.signTable{width:100%;border:none;}";
+//     html += "table.signTable td{border:none;font-size:12px;}";
+//     html += ".signL{text-align:left;padding-left:10px;}";
+//     html += ".signC{text-align:center;}";
+//     html += ".signR{text-align:right;padding-right:10px;}";
+//     html += "</style>";
+
+//     html += "</head><body>";
+//     html += sheet;
+//     html += "</body></html>";
+
+//     return html;
+// }
+
+
+// // =========================
+// // 打印预览（240mm x 140mm）
+// // =========================
+// bool MainWindow::printShipment(int shipmentId, QString* err)
+// {
+//     QString html = buildShipmentHtml(shipmentId, err);
+//     if (html.isEmpty()) return false;
+
+//     QPrinter printer(QPrinter::HighResolution);
+//     printer.setDocName(QString("Shipment_%1").arg(shipmentId));
+
+//     // 自定义纸张 240mm x 140mm
+//     const QPageSize doubleSheetSize(QSizeF(240, 140), QPageSize::Millimeter, "Double_Page");
+//     printer.setPageSize(doubleSheetSize);
+//     printer.setPageOrientation(QPageLayout::Portrait);
+
+//     // 这里的“上边距 0”生效前提：HTML 自己也别 margin-top（我们已经清了）
+//     printer.setFullPage(false);
+//     printer.setPageMargins(QMarginsF(5, 0, 5, 0), QPageLayout::Millimeter);
+
+//     QTextDocument doc;
+//     doc.setDocumentMargin(0);
+//     doc.setHtml(html);
+
+//     QPrintPreviewDialog preview(&printer, this);
+//     preview.setWindowTitle("打印预览");
+
+//     connect(&preview, &QPrintPreviewDialog::paintRequested, this, [&](QPrinter* p) {
+//         // 让 doc 的分页尺寸 = 打印机可绘制区域（Point）
+//         doc.setPageSize(p->pageRect(QPrinter::Point).size());
+//         doc.print(p);
+
+//         // 如果你想确认是不是“硬件不可打印边距”，可以临时打开这行：
+//         // qDebug() << "paperRect(pt)=" << p->paperRect(QPrinter::Point)
+//         //          << "pageRect(pt)="  << p->pageRect(QPrinter::Point);
+//     });
+
+//     if (preview.exec() != QDialog::Accepted) return false;
+//     return true;
+// }
+
+
+#include <QSqlQuery>
+#include <QSqlError>
+#include <QDebug>
+#include <QTextDocument>
+#include <QPrinter>
+#include <QPrintPreviewDialog>
+#include <QPageSize>
+#include <QPageLayout>
+#include <QMarginsF>
+
+// =========================
+// 生成出库单 HTML（表头/表格/签字栏统一 98% 宽）
+// =========================
+QString MainWindow::buildShipmentHtml(int shipmentId, QString* err)
+{
     QSqlQuery q;
     q.prepare(R"(
         SELECT c.name, s.ship_date, s.total_amount
@@ -1221,42 +1618,22 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
         WHERE s.id = ?
     )");
     q.addBindValue(shipmentId);
+
     if (!q.exec() || !q.next()) {
         if (err) *err = "查询出库单头信息失败";
         return {};
     }
 
-    const QString company  = q.value(0).toString();
-    const QString shipDate = q.value(1).toString();
-    const double totalAmt  = q.value(2).toDouble();
-    const QString supplier = ui->leOutSupplier ? ui->leOutSupplier->text() : QString();
-    const QString deliverer = ui->leOutDeliverer ? ui->leOutDeliverer->text() : QString();
+    const QString company    = q.value(0).toString();
+    const QString shipDate   = q.value(1).toString();
+    const double  totalAmt   = q.value(2).toDouble();
+
+    const QString supplier   = ui->leOutSupplier  ? ui->leOutSupplier->text()  : QString();
+    const QString deliverer  = ui->leOutDeliverer ? ui->leOutDeliverer->text() : QString();
 
     auto esc = [](const QString& s){ return s.toHtmlEscaped(); };
 
-    QString sheet;
-    sheet += "<div class='sheet'>";
-    sheet += "<div style='margin-bottom:8px;'>";
-    sheet += "<table style='width:100%;border-collapse:collapse;'>";
-    sheet += "<tr>";
-    sheet += "<div style='width:100%;text-align:center;margin-top:10px;"
-             "font-size:60px;font-weight:700;'>";
-    sheet += "健力源  " + esc(company) + "  计划表</td>";
-    sheet += "</tr>";
-    sheet += "</table>";
-    sheet += "<div style='width:100%;text-align:center;margin-top:6px;'>";
-    sheet += "供货商：" + esc(supplier)
-             + "&nbsp;&nbsp;&nbsp;送货人：" + esc(deliverer)
-             + "&nbsp;&nbsp;&nbsp;日期：" + esc(shipDate);
-    sheet += "</div>";
-    sheet += "</div>";
-
-    sheet += "<table border='1' cellspacing='0' cellpadding='6' width='100%' style='border-collapse:collapse;text-align:center;'>";
-    sheet += "<tr>"
-             "<th>序号</th><th>品名</th><th>规格</th><th>单位</th>"
-             "<th>申请数量</th><th>验收数量</th><th>单价</th><th>合计金额</th><th>备注</th>"
-             "</tr>";
-
+    // --- 明细 ---
     QSqlQuery qi;
     qi.prepare(R"(
         SELECT p.name, p.spec, p.unit, p.barcode, i.qty, i.unit_price, i.amount
@@ -1266,101 +1643,155 @@ QString MainWindow::buildShipmentHtml(int shipmentId, QString* err) {
         ORDER BY p.name
     )");
     qi.addBindValue(shipmentId);
+
     if (!qi.exec()) {
         if (err) *err = "查询出库明细失败";
         return {};
     }
 
+    QString sheet;
+    sheet += "<div class='sheet'>";
+
+    // ✅ 统一宽度容器：表头 + 主表格 + 签字栏 都在里面 => 三块宽度一致（98%）
+    sheet += "  <div class='w98'>";
+
+    // ===== 表头 =====
+    sheet += "    <div class='hdr'>";
+    sheet += "      <div class='title'>健力源&nbsp;&nbsp;" + esc(company) + "&nbsp;&nbsp;计划表</div>";
+    sheet += "      <div class='sub'>供货商：" + esc(supplier)
+             + "&nbsp;送货人：" + esc(deliverer)
+             + "&nbsp;日期：" + esc(shipDate) + "</div>";
+    sheet += "    </div>";
+
+    // ===== 主表格 =====
+    // ✅ Qt 下建议加 width="100%"（比纯 CSS 更稳）
+    sheet += "<table class='main' width='100%' border='1' cellspacing='0' cellpadding='6'>";
+
+    sheet += "  <tr>"
+             "    <th>序号</th><th>品名</th><th>规格</th><th>单位</th>"
+             "    <th>申请数量</th><th>验收数量</th><th>单价</th><th>合计金额</th><th>库位</th>"
+             "  </tr>";
+
     int rowNo = 1;
     while (qi.next()) {
-        const QString name   = qi.value(0).toString();
-        const QString spec   = qi.value(1).toString();
+        const QString name     = qi.value(0).toString();
+        const QString spec     = qi.value(1).toString();
         const QString unitName = qi.value(2).toString();
-        const int qty        = qi.value(4).toInt();
-        const double unit    = qi.value(5).toDouble();
-        const double amt     = qi.value(6).toDouble();
+        const int     qty      = qi.value(4).toInt();
+        const double  unit     = qi.value(5).toDouble();
+        const double  amt      = qi.value(6).toDouble();
 
-        sheet += "<tr>";
-        sheet += "<td>" + QString::number(rowNo) + "</td>";
-        sheet += "<td>" + esc(name) + "</td>";
-        sheet += "<td>" + esc(spec) + "</td>";
-        sheet += "<td>" + esc(unitName) + "</td>";
-        sheet += "<td></td>";
-        sheet += "<td>" + QString::number(qty) + "</td>";
-        sheet += "<td>" + QString::number(unit, 'f', 2) + "</td>";
-        sheet += "<td>" + QString::number(amt, 'f', 2) + "</td>";
-        sheet += "<td></td>";
-        sheet += "</tr>";
+        sheet += "  <tr>";
+        sheet += "    <td>" + QString::number(rowNo) + "</td>";
+        sheet += "    <td>" + esc(name) + "</td>";
+        sheet += "    <td>" + esc(spec) + "</td>";
+        sheet += "    <td>" + esc(unitName) + "</td>";
+        sheet += "    <td></td>";
+        sheet += "    <td>" + QString::number(qty) + "</td>";
+        sheet += "    <td>" + QString::number(unit, 'f', 2) + "</td>";
+        sheet += "    <td>" + QString::number(amt,  'f', 2) + "</td>";
+        sheet += "    <td class='left'>" + esc(QStringLiteral("山东挨着家库")) + "</td>";
+        sheet += "  </tr>";
         ++rowNo;
     }
 
-    sheet += QString("<tr><td colspan='7'><b>合计</b></td>"
-                     "<td><b>%1</b></td><td></td></tr>")
-                 .arg(QString::number(totalAmt, 'f', 2));
+    // 合计行：合计文字靠右
+    sheet += QString(
+                 "  <tr>"
+                 "    <td colspan='7' class='sumlabel'><b>合计</b></td>"
+                 "    <td class='sumamt'><b>%1</b></td>"
+                 "    <td></td>"
+                 "  </tr>"
+                 ).arg(QString::number(totalAmt, 'f', 2));
 
-    // ... 上面是合计行的代码 ...
     sheet += "</table>";
 
-    // --- 签字栏开始 ---
-    // 1. 外层容器：宽度设为 90% 或 100% 都可以，margin-top 稍微加大一点(30px)拉开和表格的距离
-    sheet += "<div style='width:98%; margin:30px auto 0 auto;'>";
-
-    // 2. 签字栏表格：宽度铺满，去掉边框
-    sheet += "  <table width='100%' style='border:none; border-collapse:collapse;'>";
+    // ===== 签字栏（不变：整体仍然是 98%，但内部铺满）=====
+    sheet += "<div class='signWrap'>";
+    sheet += "  <table class='signTable' width='100%' style='border:none;border-collapse:collapse;'>";
     sheet += "    <tr>";
-
-    // 【左侧】申请人：align='left' 强制靠左
-    // 这里的 padding-left:10px 是为了不让文字紧贴纸张边缘，留一点点呼吸感，比 120px 安全得多
-    sheet += "      <td width='33%' align='left' style='border:none; padding-left:10px;'>申请人：__________</td>";
-
-    // 【中间】验收人：align='center' 强制居中
+    sheet += "      <td width='33%' align='left'   style='border:none;padding-left:10px;'>申请人：__________</td>";
     sheet += "      <td width='34%' align='center' style='border:none;'>验收人：__________</td>";
-
-    // 【右侧】审核人：align='right' 强制靠右
-    // 同样加一点 padding-right 防止紧贴右边缘
-    sheet += "      <td width='33%' align='right' style='border:none; padding-right:10px;'>审核人：__________</td>";
-
+    sheet += "      <td width='33%' align='right'  style='border:none;padding-right:10px;'>审核人：__________</td>";
     sheet += "    </tr>";
     sheet += "  </table>";
     sheet += "</div>";
-    sheet += "</div>";
-    // --- 签字栏结束 ---
 
+    sheet += "  </div>";  // ✅ 关闭 .w98
+    sheet += "</div>";    // 关闭 .sheet
+
+    // ===== 整体 HTML + CSS =====
     QString html;
     html += "<html><head><meta charset='utf-8'>";
     html += "<style>";
-    html += "body{font-family:'SimSun';}";
+
+    // 清零默认边距
+    html += "html,body{margin:0;padding:0;font-family:'SimSun';}";
+    html += "*{margin:0;padding:0;}";
+
+    // 统一宽度 98%
     html += ".sheet{width:100%;box-sizing:border-box;}";
-    html += "</style></head><body>";
+    html += ".w98{width:98%;margin:0 auto;box-sizing:border-box;}";
+
+    // 表头
+    html += ".hdr{padding:0 0 8px 0;}";
+    html += ".title{text-align:center;font-size:19px;font-weight:700;line-height:1.2;}";
+    html += ".sub{text-align:center;font-size:12px;line-height:1.2;margin-top:6px;}";
+
+    // 主表格
+    html += "table{border-collapse:collapse;}";
+    html += "table.main{table-layout:fixed;text-align:center;font-size:9px;margin:0;}";
+    html += "table.main th, table.main td{border:1px solid #000;padding:6px;}";
+    html += "td.left{text-align:left;}";
+    html += "td.sumlabel{text-align:right;}";
+    html += "td.sumamt{text-align:left;}";
+
+    // 签字栏
+    html += ".signWrap{margin-top:5px;}";
+
+    html += "</style>";
+    html += "</head><body>";
     html += sheet;
     html += "</body></html>";
 
     return html;
 }
 
-bool MainWindow::printShipment(int shipmentId, QString* err) {
+
+// =========================
+// 打印预览（240mm x 140mm）
+// =========================
+bool MainWindow::printShipment(int shipmentId, QString* err)
+{
     QString html = buildShipmentHtml(shipmentId, err);
     if (html.isEmpty()) return false;
 
     QPrinter printer(QPrinter::HighResolution);
     printer.setDocName(QString("Shipment_%1").arg(shipmentId));
-    const QPageSize doubleSheetSize(QSizeF(210, 594), QPageSize::Millimeter, "A4_Double");
+
+    const QPageSize doubleSheetSize(QSizeF(240, 140), QPageSize::Millimeter, "Double_Page");
     printer.setPageSize(doubleSheetSize);
     printer.setPageOrientation(QPageLayout::Portrait);
-    printer.setPageMargins(QMarginsF(10, 10, 10, 10), QPageLayout::Millimeter);
+
+    printer.setFullPage(false);
+    printer.setPageMargins(QMarginsF(30, 0, 30, 0), QPageLayout::Millimeter); // 你现在用 5mm OK
 
     QTextDocument doc;
+    doc.setDocumentMargin(0);
     doc.setHtml(html);
 
     QPrintPreviewDialog preview(&printer, this);
     preview.setWindowTitle("打印预览");
+
     connect(&preview, &QPrintPreviewDialog::paintRequested, this, [&](QPrinter* p) {
+        doc.setPageSize(p->pageRect(QPrinter::Point).size());
         doc.print(p);
     });
 
     if (preview.exec() != QDialog::Accepted) return false;
     return true;
 }
+
 
 void MainWindow::applyTableFont(bool save) {
     m_tableFontPt = std::clamp(m_tableFontPt, 8, 24);
