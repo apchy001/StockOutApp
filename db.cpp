@@ -44,10 +44,15 @@ bool Db::init() {
         return false;
     }
 
-    execSql("PRAGMA foreign_keys = ON;");
+    bool ok = true;
+    auto runSql = [&ok](const QString& sql) {
+        ok = execSql(sql) && ok;
+    };
+
+    runSql("PRAGMA foreign_keys = ON;");
 
     // products：加 spec + barcode（条码唯一）
-    execSql(R"(CREATE TABLE IF NOT EXISTS products (
+    runSql(R"(CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         spec TEXT,
@@ -57,13 +62,13 @@ bool Db::init() {
         unit_price REAL NOT NULL DEFAULT 0 CHECK(unit_price >= 0)
     );)");
 
-    execSql(R"(CREATE TABLE IF NOT EXISTS companies (
+    runSql(R"(CREATE TABLE IF NOT EXISTS companies (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL UNIQUE
     );)");
 
     // 出库单
-    execSql(R"(CREATE TABLE IF NOT EXISTS shipments (
+    runSql(R"(CREATE TABLE IF NOT EXISTS shipments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         company_id INTEGER NOT NULL,
         ship_date TEXT NOT NULL,
@@ -72,7 +77,7 @@ bool Db::init() {
         FOREIGN KEY(company_id) REFERENCES companies(id)
     );)");
 
-    execSql(R"(CREATE TABLE IF NOT EXISTS shipment_items (
+    runSql(R"(CREATE TABLE IF NOT EXISTS shipment_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         shipment_id INTEGER NOT NULL,
         product_id INTEGER NOT NULL,
@@ -84,14 +89,14 @@ bool Db::init() {
     );)");
 
     // 入库单
-    execSql(R"(CREATE TABLE IF NOT EXISTS receipts (
+    runSql(R"(CREATE TABLE IF NOT EXISTS receipts (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         recv_date TEXT NOT NULL,
         total_qty INTEGER NOT NULL DEFAULT 0,
         note TEXT
     );)");
 
-    execSql(R"(CREATE TABLE IF NOT EXISTS receipt_items (
+    runSql(R"(CREATE TABLE IF NOT EXISTS receipt_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         receipt_id INTEGER NOT NULL,
         product_id INTEGER NOT NULL,
@@ -100,8 +105,13 @@ bool Db::init() {
         FOREIGN KEY(product_id) REFERENCES products(id)
     );)");
 
-    execSql("CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);");
-    execSql("CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode);");
+    runSql("CREATE INDEX IF NOT EXISTS idx_products_name ON products(name);");
+    runSql("CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode);");
+
+    if (!ok) {
+        qDebug() << "DB schema initialization failed.";
+        return false;
+    }
 
     return true;
 }

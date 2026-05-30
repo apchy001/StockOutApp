@@ -243,6 +243,12 @@ MainWindow::MainWindow(QWidget *parent)
     menuCompany->addAction(actToggle);
     connect(actToggle, &QAction::triggered, this, &MainWindow::onCToggleActive);
 
+    auto menuOut = menuBar()->addMenu("出库");
+    auto actOutExport = new QAction("导出最近出库单CSV", this);
+    actOutExport->setShortcut(QKeySequence("Ctrl+E"));
+    menuOut->addAction(actOutExport);
+    connect(actOutExport, &QAction::triggered, this, &MainWindow::onOutExport);
+
     connect(ui->btnCSearch, &QPushButton::clicked, this, &MainWindow::onCSearch);
     connect(ui->btnCReset,  &QPushButton::clicked, this, &MainWindow::onCReset);
     connect(ui->btnCAdd,    &QPushButton::clicked, this, &MainWindow::onCAdd);
@@ -841,15 +847,6 @@ void MainWindow::reloadCompanyCombo() {
     }
 
 
-    // ✅ 同步更新自动补全的候选列表（否则新增公司后补全还是旧数据）
-    if (m_companySuggestModel) {
-        QStringList names;
-        names.reserve(ui->cbOutCompany->count());
-        for (int i = 0; i < ui->cbOutCompany->count(); ++i)
-            names << ui->cbOutCompany->itemText(i);
-        m_companySuggestModel->setStringList(names);
-    }
-
     int idx = ui->cbOutCompany->findData(prevId);
     if (idx >= 0) ui->cbOutCompany->setCurrentIndex(idx);
     else ui->cbOutCompany->setCurrentIndex(-1);
@@ -1013,7 +1010,7 @@ void MainWindow::onOutCommit() {
                     "VALUES(?,?,?,?,?)");
 
     QSqlQuery upd(db);
-    upd.prepare("UPDATE products SET stock_qty = stock_qty - ? WHERE id = ?");
+    upd.prepare("UPDATE products SET stock_qty = stock_qty - ? WHERE id = ? AND stock_qty >= ?");
 
     double totalAmount = 0.0;
 
@@ -1023,14 +1020,14 @@ void MainWindow::onOutCommit() {
         double unit = m_outModel->item(r, 6)->text().toDouble();
         double amount = unit * qty;
 
-        // 再查一次库存（保险）
-        QSqlQuery chk(db);
-        chk.prepare("SELECT stock_qty FROM products WHERE id = ?");
-        chk.addBindValue(productId);
-        if (!chk.exec() || !chk.next()) return rollbackFail("查询库存失败");
-        int stockNow = chk.value(0).toInt();
-        if (stockNow < qty) return rollbackFail(QString("库存不足：product_id=%1，库存=%2，需求=%3")
-                                    .arg(productId).arg(stockNow).arg(qty));
+        upd.addBindValue(qty);
+        upd.addBindValue(productId);
+        upd.addBindValue(qty);
+        if (!upd.exec()) return rollbackFail(upd.lastError().text());
+        if (upd.numRowsAffected() != 1) {
+            return rollbackFail(QString("库存不足或商品不存在：product_id=%1，需求=%2").arg(productId).arg(qty));
+        }
+        upd.finish();
 
         insItem.addBindValue(shipmentId);
         insItem.addBindValue(productId);
@@ -1039,11 +1036,6 @@ void MainWindow::onOutCommit() {
         insItem.addBindValue(amount);
         if (!insItem.exec()) return rollbackFail(insItem.lastError().text());
         insItem.finish();
-
-        upd.addBindValue(qty);
-        upd.addBindValue(productId);
-        if (!upd.exec()) return rollbackFail(upd.lastError().text());
-        upd.finish();
 
         totalAmount += amount;
     }
